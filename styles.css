@@ -312,6 +312,10 @@ button.ghost {
 }
 
 .date-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   background: var(--card);
   color: var(--accent);
   border: 1px solid rgba(34, 87, 122, 0.2);
