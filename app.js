@@ -102,15 +102,18 @@ let arePastMatchesVisible = false;
 
 const updatePastMatchesVisibility = () => {
   const hidePastMatches = !arePastMatchesVisible;
-  matchesEl
-    .querySelectorAll(".match-card.is-finished")
-    .forEach(card => card.classList.toggle("is-collapsed", hidePastMatches));
+  const finishedCards = Array.from(
+    matchesEl.querySelectorAll(".match-card.is-finished")
+  );
+  const pastMatchCount = finishedCards.length;
+  finishedCards.forEach(card => card.classList.toggle("is-collapsed", hidePastMatches));
 
   if (togglePastMatchesButton) {
     togglePastMatchesButton.textContent = arePastMatchesVisible
-      ? "Hide past matches"
-      : "Show past matches";
+      ? `Hide past matches (${pastMatchCount})`
+      : `Show past matches (${pastMatchCount})`;
     togglePastMatchesButton.setAttribute("aria-pressed", String(arePastMatchesVisible));
+    togglePastMatchesButton.disabled = pastMatchCount === 0;
   }
 };
 
@@ -494,6 +497,7 @@ const renderMatches = matches => {
   if (!matches.length) {
     matchesEl.innerHTML =
       '<div class="match-card">No matches found for these filters.</div>';
+    updatePastMatchesVisibility();
     return;
   }
 
