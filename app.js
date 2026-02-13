@@ -68,6 +68,7 @@ const readDateFromUrl = () => {
 };
 
 const writeDateToUrl = value => {
+  console.info("[footy] writeDateToUrl", { value });
   const params = new URLSearchParams(window.location.search);
   if (value) {
     params.set("date", value);
@@ -78,6 +79,7 @@ const writeDateToUrl = value => {
   const nextUrl = query
     ? `${window.location.pathname}?${query}`
     : window.location.pathname;
+  console.info("[footy] replaceState", { nextUrl });
   window.history.replaceState({}, "", nextUrl);
 };
 
@@ -116,6 +118,7 @@ const fetchJson = async (path, params = {}) => {
   }
   const query = buildParams(params);
   const url = query ? `${apiUrl}${path}?${query}` : `${apiUrl}${path}`;
+  console.info("[footy] fetch", { url });
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -441,6 +444,7 @@ const loadMatches = async () => {
     writeDateToUrl(currentDate);
   }
   const date = currentDate;
+  console.info("[footy] loadMatches", { date });
   const sportIds = getCheckedSportIds();
   const countryIds = countryFilterState.getSelectedIds();
   const competitionIds = competitionFilterState.getSelectedIds();
@@ -465,6 +469,7 @@ const loadMatches = async () => {
 };
 
 const handleInit = async () => {
+  console.info("[footy] init", { location: window.location.href });
   currentDate = readDateFromUrl() || todayIso();
   writeDateToUrl(currentDate);
   if (dateBannerEl) {
