@@ -265,6 +265,13 @@ const createMultiFilter = ({
     optionsEl.appendChild(fragment);
   };
 
+  const getVisibleItems = () => {
+    const query = (searchInput.value || "").trim().toLowerCase();
+    return filter.items.filter(item =>
+      !query ? true : item.name.toLowerCase().includes(query)
+    );
+  };
+
   const openOptions = () => {
     optionsEl.classList.add("is-open");
     renderOptions();
@@ -280,6 +287,14 @@ const createMultiFilter = ({
     } else {
       filter.selected.add(id);
     }
+    renderPills();
+    renderOptions();
+    if (filter.onChange) filter.onChange();
+  };
+
+  const selectOnlyIfMissing = id => {
+    if (filter.selected.has(id)) return;
+    filter.selected.add(id);
     renderPills();
     renderOptions();
     if (filter.onChange) filter.onChange();
@@ -304,6 +319,13 @@ const createMultiFilter = ({
 
   searchInput.addEventListener("focus", openOptions);
   searchInput.addEventListener("input", openOptions);
+  searchInput.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    const visible = getVisibleItems();
+    if (visible.length !== 1) return;
+    event.preventDefault();
+    selectOnlyIfMissing(visible[0].id);
+  });
 
   optionsEl.addEventListener("click", event => {
     const target = event.target.closest(".option-item");
@@ -418,6 +440,33 @@ const loadCompetitions = async () => {
   );
 };
 
+const DEFAULT_MATCH_DURATION_MINUTES = 120;
+const SPORT_MATCH_DURATION_MINUTES = {
+  1: 120,
+  2: 210,
+  3: 120,
+  4: 30,
+};
+
+const getMatchStatus = (date, time, sportId) => {
+  const normalizedTime = time && time.trim().length > 0 ? time.trim() : "00:00";
+  const matchDateTime = new Date(`${date}T${normalizedTime}`);
+  if (Number.isNaN(matchDateTime.getTime())) return "upcoming";
+
+  const durationMinutes =
+    (sportId ? SPORT_MATCH_DURATION_MINUTES[sportId] : undefined) ||
+    DEFAULT_MATCH_DURATION_MINUTES;
+  const matchEndTime = new Date(matchDateTime.getTime() + durationMinutes * 60 * 1000);
+  const now = new Date();
+
+  const isMatchInFuture = matchDateTime > now;
+  const isMatchInPast = matchEndTime < now;
+
+  if (isMatchInPast) return "finished";
+  if (!isMatchInFuture && !isMatchInPast) return "ongoing";
+  return "upcoming";
+};
+
 const formatTeams = match => {
   const home = match.home_team?.name || "TBD";
   const away = match.away_team?.name || "";
@@ -436,6 +485,10 @@ const renderMatches = matches => {
   matches.forEach(match => {
     const card = document.createElement("article");
     card.className = "match-card";
+    const matchDate = match.date || currentDate;
+    const sportId = match.sport?.id || match.sport_id || match.competition?.sport_id;
+    const matchStatus = getMatchStatus(matchDate, match.time, sportId);
+    card.classList.add(`is-${matchStatus}`);
 
     const time = document.createElement("div");
     time.className = "match-time";

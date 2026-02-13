@@ -337,6 +337,15 @@ button.ghost {
   font-size: 0.95rem;
 }
 
+.match-card.is-finished {
+  opacity: 0.58;
+  filter: grayscale(0.2);
+}
+
+.match-card.is-ongoing {
+  box-shadow: inset 3px 0 0 rgba(115, 210, 198, 0.75);
+}
+
 .match-card:last-child {
   border-bottom: none;
 }
