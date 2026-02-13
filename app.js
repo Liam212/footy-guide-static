@@ -24,6 +24,7 @@ const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
 const nextDayButton = document.getElementById("next-day");
 const matchesEl = document.getElementById("matches");
+const themeToggleButton = document.getElementById("theme-toggle");
 
 const setStatus = message => {
   statusEl.textContent = message || "";
@@ -34,6 +35,44 @@ const STORAGE_KEYS = {
   countries: "simplifiedCountries",
   competitions: "simplifiedCompetitions",
   broadcasters: "simplifiedBroadcasters",
+};
+
+const THEME_STORAGE_KEY = "simplifiedTheme";
+const darkModeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+const getStoredTheme = () => {
+  const value = localStorage.getItem(THEME_STORAGE_KEY);
+  return value === "dark" || value === "light" ? value : null;
+};
+
+const getSystemTheme = () => (darkModeQuery.matches ? "dark" : "light");
+
+const applyTheme = theme => {
+  document.documentElement.setAttribute("data-theme", theme);
+  if (themeToggleButton) {
+    const next = theme === "dark" ? "light" : "dark";
+    themeToggleButton.textContent = theme === "dark" ? "Light mode" : "Dark mode";
+    themeToggleButton.setAttribute("aria-label", `Switch to ${next} mode`);
+  }
+};
+
+const initTheme = () => {
+  const stored = getStoredTheme();
+  applyTheme(stored || getSystemTheme());
+
+  darkModeQuery.addEventListener("change", () => {
+    if (getStoredTheme()) return;
+    applyTheme(getSystemTheme());
+  });
+
+  if (themeToggleButton) {
+    themeToggleButton.addEventListener("click", () => {
+      const currentTheme = document.documentElement.getAttribute("data-theme") || getSystemTheme();
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      applyTheme(nextTheme);
+    });
+  }
 };
 
 const readStoredIds = key => {
@@ -108,16 +147,16 @@ const buildParams = params => {
 };
 
 const fetchJson = async (path, params = {}) => {
-  if (!apiUrl) {
-    throw new Error("Missing API URL. Set window.FOOTY_CONFIG.apiUrl.");
+  if (!apiUrl || !apiKey) {
+    throw new Error("Missing API URL or API KEY.");
   }
   const query = buildParams(params);
   const url = query ? `${apiUrl}${path}?${query}` : `${apiUrl}${path}`;
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
-      ...(apiKey ? { "x-api-key": apiKey } : {}),
-    },
+      "x-api-key": apiKey
+    }
   });
 
   if (!res.ok) {
@@ -413,7 +452,9 @@ const renderMatches = matches => {
     const channels = document.createElement("div");
     channels.className = "channels";
     (match.channels || []).forEach(channel => {
-      const pill = document.createElement("span");
+      const pill = document.createElement("a");
+      pill.href = `/broadcaster?id=${channel.id}`
+      pill.style = "text-decoration:none;"
       pill.className = "channel-pill";
       pill.textContent = channel.name;
       if (channel.primary_color) {
@@ -462,6 +503,7 @@ const loadMatches = async () => {
 };
 
 const handleInit = async () => {
+  initTheme();
   currentDate = readDateFromUrl() || todayIso();
   writeDateToUrl(currentDate);
   if (dateBannerEl) {
