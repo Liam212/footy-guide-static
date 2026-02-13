@@ -300,6 +300,17 @@ button.ghost {
   margin: 0;
 }
 
+.match-tools {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.subtle-toggle {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
 .date-nav {
   background: var(--card);
   color: var(--accent);
@@ -340,6 +351,10 @@ button.ghost {
 .match-card.is-finished {
   opacity: 0.58;
   filter: grayscale(0.2);
+}
+
+.match-card.is-collapsed {
+  display: none;
 }
 
 .match-card.is-ongoing {
@@ -386,6 +401,10 @@ button.ghost {
 }
 
 @media (max-width: 900px) {
+  .match-tools {
+    justify-content: flex-start;
+  }
+
   .match-card {
     grid-template-columns: 1fr;
     row-gap: 8px;

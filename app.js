@@ -23,6 +23,7 @@ const statusEl = document.getElementById("status");
 const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
 const nextDayButton = document.getElementById("next-day");
+const togglePastMatchesButton = document.getElementById("toggle-past-matches");
 const matchesEl = document.getElementById("matches");
 const themeToggleButton = document.getElementById("theme-toggle");
 
@@ -97,6 +98,21 @@ const writeStoredIds = (key, values) => {
 
 const todayIso = () => new Date().toISOString().split("T")[0];
 let currentDate = todayIso();
+let arePastMatchesVisible = false;
+
+const updatePastMatchesVisibility = () => {
+  const hidePastMatches = !arePastMatchesVisible;
+  matchesEl
+    .querySelectorAll(".match-card.is-finished")
+    .forEach(card => card.classList.toggle("is-collapsed", hidePastMatches));
+
+  if (togglePastMatchesButton) {
+    togglePastMatchesButton.textContent = arePastMatchesVisible
+      ? "Hide past matches"
+      : "Show past matches";
+    togglePastMatchesButton.setAttribute("aria-pressed", String(arePastMatchesVisible));
+  }
+};
 
 const readDateFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
@@ -524,6 +540,7 @@ const renderMatches = matches => {
   });
 
   matchesEl.appendChild(fragment);
+  updatePastMatchesVisibility();
 };
 
 const loadMatches = async () => {
@@ -602,6 +619,13 @@ sportPills.addEventListener("click", event => {
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
   nextDayButton.addEventListener("click", () => shiftDay(1));
+}
+
+if (togglePastMatchesButton) {
+  togglePastMatchesButton.addEventListener("click", () => {
+    arePastMatchesVisible = !arePastMatchesVisible;
+    updatePastMatchesVisibility();
+  });
 }
 
 handleInit();
