@@ -436,7 +436,11 @@ const renderMatches = matches => {
 };
 
 const loadMatches = async () => {
-  const date = currentDate || todayIso();
+  if (!currentDate) {
+    currentDate = todayIso();
+    writeDateToUrl(currentDate);
+  }
+  const date = currentDate;
   const sportIds = getCheckedSportIds();
   const countryIds = countryFilterState.getSelectedIds();
   const competitionIds = competitionFilterState.getSelectedIds();
