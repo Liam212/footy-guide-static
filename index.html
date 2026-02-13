@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Footy Guide Lite</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <section class="controls" aria-label="Filters">
+        <div class="control full-row">
+          <label>Sports</label>
+          <div id="sport-pills" class="pill-group" role="group" aria-label="Sports"></div>
+        </div>
+        <div class="control">
+          <label for="country-search">Countries</label>
+          <div id="country-filter" class="multi-select">
+            <div class="multi-select-box">
+              <div id="country-pills" class="token-pills"></div>
+              <input id="country-search" type="search" placeholder="Search countries" />
+            </div>
+            <div id="country-options" class="options" role="listbox" aria-label="Countries"></div>
+          </div>
+        </div>
+        <div class="control">
+          <label for="competition-search">Competitions</label>
+          <div id="competition-filter" class="multi-select">
+            <div class="multi-select-box">
+              <div id="competition-pills" class="token-pills"></div>
+              <input id="competition-search" type="search" placeholder="Search competitions" />
+            </div>
+            <div id="competition-options" class="options" role="listbox" aria-label="Competitions"></div>
+          </div>
+        </div>
+        <details class="advanced">
+          <summary>Advanced filters</summary>
+          <div class="control">
+            <label for="broadcaster-search">Broadcasters</label>
+            <div id="broadcaster-filter" class="multi-select">
+              <div class="multi-select-box">
+                <div id="broadcaster-pills" class="token-pills"></div>
+                <input id="broadcaster-search" type="search" placeholder="Search broadcasters" />
+              </div>
+              <div id="broadcaster-options" class="options" role="listbox" aria-label="Broadcasters"></div>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="status" aria-live="polite">
+        <p id="status"></p>
+      </section>
+
+      <section class="date-banner" aria-label="Selected date">
+        <button id="prev-day" type="button" class="date-nav" aria-label="Previous day">
+          &#x2039;
+        </button>
+        <p id="date-banner"></p>
+        <button id="next-day" type="button" class="date-nav" aria-label="Next day">
+          &#x203A;
+        </button>
+      </section>
+
+      <section id="matches" class="matches" aria-label="Match list"></section>
+    </div>
+
+    <script>
+      window.FOOTY_CONFIG = {
+        apiUrl: "${API_URL}",
+        apiKey: "${API_KEY}",
+      };
+    </script>
+    <script src="app.js"></script>
+  </body>
+</html>
