@@ -69,16 +69,13 @@ const readDateFromUrl = () => {
 
 const writeDateToUrl = value => {
   console.info("[footy] writeDateToUrl", { value });
-  const params = new URLSearchParams(window.location.search);
+  const url = new URL(window.location.href);
   if (value) {
-    params.set("date", value);
+    url.searchParams.set("date", value);
   } else {
-    params.delete("date");
+    url.searchParams.delete("date");
   }
-  const query = params.toString();
-  const nextUrl = query
-    ? `${window.location.pathname}?${query}`
-    : window.location.pathname;
+  const nextUrl = `${url.pathname}${url.search}`;
   console.info("[footy] replaceState", { nextUrl });
   window.history.replaceState({}, "", nextUrl);
 };
@@ -469,7 +466,11 @@ const loadMatches = async () => {
 };
 
 const handleInit = async () => {
-  console.info("[footy] init", { location: window.location.href });
+  console.info("[footy] init", {
+    location: window.location.href,
+    config: window.FOOTY_CONFIG,
+    apiUrl,
+  });
   currentDate = readDateFromUrl() || todayIso();
   writeDateToUrl(currentDate);
   if (dateBannerEl) {
