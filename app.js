@@ -525,8 +525,8 @@ const renderMatches = matches => {
     const channels = document.createElement("div");
     channels.className = "channels";
     (match.channels || []).forEach(channel => {
-      const pill = document.createElement("a");
-      pill.href = `/broadcaster?id=${channel.id}`
+      const pill = document.createElement("span");
+      // pill.href = `/broadcaster?id=${channel.id}`
       pill.style = "text-decoration:none;"
       pill.className = "channel-pill";
       pill.textContent = channel.name;
