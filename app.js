@@ -1,6 +1,19 @@
+import {
+  todayIso,
+  formatBannerDate,
+  getShiftedDate,
+  readDateFromUrl,
+  writeDateToUrl,
+} from "./date-utils.js";
+import { buildParams, createApiClient } from "./api-client.js";
+
 const config = window.FOOTY_CONFIG || {};
-const apiUrl = (config.apiUrl || "").replace(/\/$/, "");
-const apiKey = config.apiKey || "";
+const hasApiUrl = Boolean((config.apiUrl || "").trim());
+const apiClient = createApiClient({
+  apiUrl: config.apiUrl,
+  apiKey: config.apiKey,
+});
+const { fetchJson } = apiClient;
 
 const sportPills = document.getElementById("sport-pills");
 
@@ -97,13 +110,6 @@ const writeStoredIds = (key, values) => {
   localStorage.setItem(key, JSON.stringify(values));
 };
 
-const todayIso = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
 let currentDate = todayIso();
 let arePastMatchesVisible = false;
 const MAX_MATCH_CACHE_ENTRIES = 24;
@@ -125,46 +131,6 @@ const updatePastMatchesVisibility = () => {
     togglePastMatchesButton.setAttribute("aria-pressed", String(arePastMatchesVisible));
     togglePastMatchesButton.disabled = pastMatchCount === 0;
   }
-};
-
-const readDateFromUrl = () => {
-  const params = new URLSearchParams(window.location.search);
-  const value = params.get("date");
-  if (!value) return null;
-  const parsed = new Date(`${value}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : value;
-};
-
-const writeDateToUrl = value => {
-  const url = new URL(window.location.href);
-  if (value) {
-    url.searchParams.set("date", value);
-  } else {
-    url.searchParams.delete("date");
-  }
-  const nextUrl = `${url.pathname}${url.search}`;
-  window.history.replaceState({}, "", nextUrl);
-};
-
-const parseDate = value => {
-  if (!value) return new Date();
-  return new Date(`${value}T00:00:00`);
-};
-
-const formatBannerDate = value => {
-  const date = parseDate(value);
-  return date.toLocaleDateString(undefined, {
-    weekday: "long",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
-
-const getShiftedDate = (value, direction) => {
-  const date = parseDate(value || todayIso());
-  date.setDate(date.getDate() + direction);
-  return date.toISOString().split("T")[0];
 };
 
 const normalizeFilterIds = ids => [...ids].sort((a, b) => a - b);
@@ -239,41 +205,7 @@ const prefetchDateMatches = date => {
 
 const updateTodayButtonVisibility = () => {
   if (!todayDayButton) return;
-  todayDayButton.style.display = `${(currentDate || todayIso()) === todayIso() ? 'none' : 'flex'}`;
-};
-
-const buildParams = params => {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      value.forEach(item => query.append(key, String(item)));
-      return;
-    }
-    if (value !== undefined && value !== null && value !== "") {
-      query.set(key, String(value));
-    }
-  });
-  return query.toString();
-};
-
-const fetchJson = async (path, params = {}) => {
-  if (!apiUrl || !apiKey) {
-    throw new Error("Missing API URL or API KEY.");
-  }
-  const query = buildParams(params);
-  const url = query ? `${apiUrl}${path}?${query}` : `${apiUrl}${path}`;
-  const res = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey
-    }
-  });
-
-  if (!res.ok) {
-    throw new Error(`Request failed (${res.status})`);
-  }
-
-  return res.json();
+  todayDayButton.hidden = (currentDate || todayIso()) === todayIso();
 };
 
 const getCheckedSportIds = () =>
@@ -666,7 +598,7 @@ const handleInit = async () => {
   }
   updateTodayButtonVisibility();
 
-  if (!apiUrl) {
+  if (!hasApiUrl) {
     setStatus("Set window.FOOTY_CONFIG.apiUrl to load data.");
     return;
   }
