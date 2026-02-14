@@ -106,6 +106,9 @@ const todayIso = () => {
 };
 let currentDate = todayIso();
 let arePastMatchesVisible = false;
+const MAX_MATCH_CACHE_ENTRIES = 24;
+const matchResponseCache = new Map();
+const inFlightMatchRequests = new Map();
 
 const updatePastMatchesVisibility = () => {
   const hidePastMatches = !arePastMatchesVisible;
@@ -156,6 +159,82 @@ const formatBannerDate = value => {
     month: "short",
     day: "numeric",
   });
+};
+
+const getShiftedDate = (value, direction) => {
+  const date = parseDate(value || todayIso());
+  date.setDate(date.getDate() + direction);
+  return date.toISOString().split("T")[0];
+};
+
+const normalizeFilterIds = ids => [...ids].sort((a, b) => a - b);
+
+const getSelectedMatchFilterParams = () => {
+  const sportIds = normalizeFilterIds(getCheckedSportIds());
+  const countryIds = normalizeFilterIds(countryFilterState.getSelectedIds());
+  const competitionIds = normalizeFilterIds(competitionFilterState.getSelectedIds());
+  const broadcasterIds = normalizeFilterIds(broadcasterFilterState.getSelectedIds());
+  return { sportIds, countryIds, competitionIds, broadcasterIds };
+};
+
+const buildMatchParams = (date, filters = getSelectedMatchFilterParams()) => {
+  const params = {
+    start_date: date,
+    end_date: date,
+  };
+  if (filters.sportIds.length) params.sport_ids = filters.sportIds;
+  if (filters.countryIds.length) params.country_ids = filters.countryIds;
+  if (filters.competitionIds.length) params.competition_ids = filters.competitionIds;
+  if (filters.broadcasterIds.length) params.broadcaster_ids = filters.broadcasterIds;
+  return params;
+};
+
+const getMatchRequestKey = (date, filters) =>
+  buildParams({
+    date,
+    sport_ids: filters.sportIds,
+    country_ids: filters.countryIds,
+    competition_ids: filters.competitionIds,
+    broadcaster_ids: filters.broadcasterIds,
+  });
+
+const cacheMatchesResponse = (key, matches) => {
+  if (matchResponseCache.has(key)) {
+    matchResponseCache.delete(key);
+  }
+  matchResponseCache.set(key, matches);
+  if (matchResponseCache.size <= MAX_MATCH_CACHE_ENTRIES) return;
+  const oldestKey = matchResponseCache.keys().next().value;
+  if (oldestKey) {
+    matchResponseCache.delete(oldestKey);
+  }
+};
+
+const fetchMatchesForDate = (date, filters = getSelectedMatchFilterParams()) => {
+  const key = getMatchRequestKey(date, filters);
+  if (matchResponseCache.has(key)) {
+    return Promise.resolve(matchResponseCache.get(key));
+  }
+  if (inFlightMatchRequests.has(key)) {
+    return inFlightMatchRequests.get(key);
+  }
+
+  const request = fetchJson("/matches", buildMatchParams(date, filters))
+    .then(matches => {
+      cacheMatchesResponse(key, matches);
+      return matches;
+    })
+    .finally(() => {
+      inFlightMatchRequests.delete(key);
+    });
+
+  inFlightMatchRequests.set(key, request);
+  return request;
+};
+
+const prefetchDateMatches = date => {
+  if (!date) return;
+  fetchMatchesForDate(date).catch(() => {});
 };
 
 const updateTodayButtonVisibility = () => {
@@ -566,22 +645,10 @@ const loadMatches = async () => {
   }
   const date = currentDate;
   updateTodayButtonVisibility();
-  const sportIds = getCheckedSportIds();
-  const countryIds = countryFilterState.getSelectedIds();
-  const competitionIds = competitionFilterState.getSelectedIds();
-  const broadcasterIds = broadcasterFilterState.getSelectedIds();
+  const filters = getSelectedMatchFilterParams();
 
   setStatus("Loading matches...");
-  const params = {
-    start_date: date,
-    end_date: date,
-  };
-  if (sportIds.length) params.sport_ids = sportIds;
-  if (countryIds.length) params.country_ids = countryIds;
-  if (competitionIds.length) params.competition_ids = competitionIds;
-  if (broadcasterIds.length) params.broadcaster_ids = broadcasterIds;
-
-  const matches = await fetchJson("/matches", params);
+  const matches = await fetchMatchesForDate(date, filters);
   renderMatches(matches);
   setStatus(`Showing ${matches.length} match(es).`);
   if (dateBannerEl) {
@@ -613,9 +680,7 @@ const handleInit = async () => {
 };
 
 const shiftDay = direction => {
-  const current = parseDate(currentDate || todayIso());
-  current.setDate(current.getDate() + direction);
-  const next = current.toISOString().split("T")[0];
+  const next = getShiftedDate(currentDate, direction);
   currentDate = next;
   writeDateToUrl(currentDate);
   loadMatches().catch(error => setStatus(error.message));
@@ -638,6 +703,24 @@ sportPills.addEventListener("click", event => {
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
   nextDayButton.addEventListener("click", () => shiftDay(1));
+  prevDayButton.addEventListener("mouseenter", () => {
+    prefetchDateMatches(getShiftedDate(currentDate, -1));
+  });
+  nextDayButton.addEventListener("mouseenter", () => {
+    prefetchDateMatches(getShiftedDate(currentDate, 1));
+  });
+  prevDayButton.addEventListener("focus", () => {
+    prefetchDateMatches(getShiftedDate(currentDate, -1));
+  });
+  nextDayButton.addEventListener("focus", () => {
+    prefetchDateMatches(getShiftedDate(currentDate, 1));
+  });
+  prevDayButton.addEventListener("touchstart", () => {
+    prefetchDateMatches(getShiftedDate(currentDate, -1));
+  }, { passive: true });
+  nextDayButton.addEventListener("touchstart", () => {
+    prefetchDateMatches(getShiftedDate(currentDate, 1));
+  }, { passive: true });
 }
 
 if (todayDayButton) {
