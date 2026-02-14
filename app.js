@@ -22,6 +22,7 @@ const broadcasterOptions = document.getElementById("broadcaster-options");
 const statusEl = document.getElementById("status");
 const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
+const todayDayButton = document.getElementById("today-day");
 const nextDayButton = document.getElementById("next-day");
 const togglePastMatchesButton = document.getElementById("toggle-past-matches");
 const matchesEl = document.getElementById("matches");
@@ -96,7 +97,13 @@ const writeStoredIds = (key, values) => {
   localStorage.setItem(key, JSON.stringify(values));
 };
 
-const todayIso = () => new Date().toISOString().split("T")[0];
+const todayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 let currentDate = todayIso();
 let arePastMatchesVisible = false;
 
@@ -149,6 +156,11 @@ const formatBannerDate = value => {
     month: "short",
     day: "numeric",
   });
+};
+
+const updateTodayButtonVisibility = () => {
+  if (!todayDayButton) return;
+  todayDayButton.style.display = `${(currentDate || todayIso()) === todayIso() ? 'none' : 'flex'}`;
 };
 
 const buildParams = params => {
@@ -553,6 +565,7 @@ const loadMatches = async () => {
     writeDateToUrl(currentDate);
   }
   const date = currentDate;
+  updateTodayButtonVisibility();
   const sportIds = getCheckedSportIds();
   const countryIds = countryFilterState.getSelectedIds();
   const competitionIds = competitionFilterState.getSelectedIds();
@@ -572,8 +585,9 @@ const loadMatches = async () => {
   renderMatches(matches);
   setStatus(`Showing ${matches.length} match(es).`);
   if (dateBannerEl) {
-    dateBannerEl.textContent = `Matches for ${formatBannerDate(date)}`;
+    dateBannerEl.textContent = `${formatBannerDate(date)}`;
   }
+  updateTodayButtonVisibility();
 };
 
 const handleInit = async () => {
@@ -581,8 +595,9 @@ const handleInit = async () => {
   currentDate = readDateFromUrl() || todayIso();
   writeDateToUrl(currentDate);
   if (dateBannerEl) {
-    dateBannerEl.textContent = `Matches for ${formatBannerDate(currentDate)}`;
+    dateBannerEl.textContent = `${formatBannerDate(currentDate)}`;
   }
+  updateTodayButtonVisibility();
 
   if (!apiUrl) {
     setStatus("Set window.FOOTY_CONFIG.apiUrl to load data.");
@@ -623,6 +638,14 @@ sportPills.addEventListener("click", event => {
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
   nextDayButton.addEventListener("click", () => shiftDay(1));
+}
+
+if (todayDayButton) {
+  todayDayButton.addEventListener("click", () => {
+    currentDate = todayIso();
+    writeDateToUrl(currentDate);
+    loadMatches().catch(error => setStatus(error.message));
+  });
 }
 
 if (togglePastMatchesButton) {
