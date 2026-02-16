@@ -17,17 +17,23 @@ export const createApiClient = ({ apiUrl, apiKey }) => {
   const normalizedApiKey = apiKey || "";
 
   const fetchJson = async (path, params = {}) => {
-    if (!normalizedApiUrl || !normalizedApiKey) {
-      throw new Error("Missing API URL or API KEY.");
+    if (!normalizedApiUrl) {
+      throw new Error("Missing API URL.");
     }
 
     const query = buildParams(params);
     const url = query ? `${normalizedApiUrl}${path}?${query}` : `${normalizedApiUrl}${path}`;
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    if (normalizedApiKey) {
+      headers["x-api-key"] = normalizedApiKey;
+    }
+
     const res = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": normalizedApiKey,
-      },
+      credentials: "include",
+      headers,
     });
 
     if (!res.ok) {

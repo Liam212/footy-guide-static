@@ -8,10 +8,9 @@ import {
 import { buildParams, createApiClient } from "./api-client.js";
 
 const config = window.FOOTY_CONFIG || {};
-const hasApiUrl = Boolean((config.apiUrl || "").trim());
+const apiUrl = (config.apiUrl || "/proxy").trim();
 const apiClient = createApiClient({
-  apiUrl: config.apiUrl,
-  apiKey: config.apiKey,
+  apiUrl,
 });
 const { fetchJson } = apiClient;
 
@@ -597,11 +596,6 @@ const handleInit = async () => {
     dateBannerEl.textContent = `${formatBannerDate(currentDate)}`;
   }
   updateTodayButtonVisibility();
-
-  if (!hasApiUrl) {
-    setStatus("Set window.FOOTY_CONFIG.apiUrl to load data.");
-    return;
-  }
 
   try {
     await loadFilters();
