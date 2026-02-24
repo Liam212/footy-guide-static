@@ -79,18 +79,30 @@ const STORAGE_KEYS = {
 
 const applyLandingDefaults = () => {
   const landing = window.FOOTY_LANDING || {};
-  const setIfMissing = (storageKey, ids) => {
-    if (!Array.isArray(ids) || ids.length === 0) return;
-    if (localStorage.getItem(storageKey) !== null) return;
-    const normalized = ids.map(Number).filter(value => Number.isFinite(value));
-    if (normalized.length === 0) return;
-    localStorage.setItem(storageKey, JSON.stringify(normalized));
+  const normalize = ids =>
+    (Array.isArray(ids) ? ids : [])
+      .map(Number)
+      .filter(value => Number.isFinite(value));
+
+  const next = {
+    [STORAGE_KEYS.sports]: normalize(landing.sportIds),
+    [STORAGE_KEYS.countries]: normalize(landing.countryIds),
+    [STORAGE_KEYS.competitions]: normalize(landing.competitionIds),
+    [STORAGE_KEYS.broadcasters]: normalize(landing.broadcasterIds),
   };
 
-  setIfMissing(STORAGE_KEYS.sports, landing.sportIds);
-  setIfMissing(STORAGE_KEYS.countries, landing.countryIds);
-  setIfMissing(STORAGE_KEYS.competitions, landing.competitionIds);
-  setIfMissing(STORAGE_KEYS.broadcasters, landing.broadcasterIds);
+  const hasAny = Object.values(next).some(values => values.length > 0);
+  if (!hasAny) return;
+
+  // Landing pages should reflect their intended filters even if the user already has
+  // stored selections from a previous session.
+  Object.entries(next).forEach(([key, values]) => {
+    if (values.length === 0) {
+      localStorage.removeItem(key);
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify(values));
+  });
 };
 
 const THEME_STORAGE_KEY = "simplifiedTheme";

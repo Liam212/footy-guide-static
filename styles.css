@@ -602,29 +602,14 @@ button.ghost {
   font-size: 0.82rem;
 }
 
-.footer-more {
-  margin-top: 12px;
-  border: 1px dashed var(--border);
-  border-radius: 14px;
-  padding: 10px 12px;
-  background: rgba(56, 163, 165, 0.06);
-}
-
-.footer-more-title {
-  margin: 0;
-  font-weight: 800;
-  color: var(--accent);
-  font-size: 0.9rem;
-}
-
 .footer-more-links {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px 14px;
   max-height: 220px;
   overflow: auto;
-  padding: 4px 2px;
+  padding: 4px 2px 2px;
 }
 
 .footer-more-links a {
