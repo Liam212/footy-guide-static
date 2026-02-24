@@ -60,6 +60,23 @@ a {
   border: 1px solid rgba(34, 87, 122, 0.18);
 }
 
+.site-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.site-header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+}
+
+.site-header-actions .theme-toggle {
+  margin-top: 2px;
+}
+
 .site-kicker {
   margin: 0 0 6px;
   font-size: 0.82rem;
@@ -86,11 +103,6 @@ a {
   margin: 8px 0 0;
   color: var(--muted);
   max-width: 70ch;
-}
-
-.app-top {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .theme-toggle {
