@@ -13,6 +13,7 @@ const siteUrl = String(config.siteUrl || "https://whereismatch.com").trim().repl
 const landingConfig = window.FOOTY_LANDING && typeof window.FOOTY_LANDING === "object"
   ? window.FOOTY_LANDING
   : null;
+const isSeoLandingPage = Boolean(landingConfig);
 const landingIds = {
   sportIds: (landingConfig?.sportIds || []).map(Number).filter(Number.isFinite),
   countryIds: (landingConfig?.countryIds || []).map(Number).filter(Number.isFinite),
@@ -151,6 +152,7 @@ const readStoredIds = key => {
 };
 
 const writeStoredIds = (key, values) => {
+  if (isSeoLandingPage) return;
   if (!values || values.length === 0) {
     localStorage.removeItem(key);
     return;
@@ -262,10 +264,13 @@ const getCheckedSportIds = () =>
     .filter(value => Number.isFinite(value));
 
 const renderSportPills = (sports, selectedIds) => {
+  const hasSelected = Array.isArray(selectedIds) && selectedIds.length > 0;
   const stored = new Set(
-    Array.isArray(selectedIds) && selectedIds.length > 0
+    hasSelected
       ? selectedIds
-      : readStoredIds(STORAGE_KEYS.sports)
+      : isSeoLandingPage
+        ? []
+        : readStoredIds(STORAGE_KEYS.sports)
   );
   sportPills.innerHTML = "";
   const fragment = document.createDocumentFragment();
@@ -458,10 +463,7 @@ const countryFilterState = createMultiFilter({
   optionsEl: countryOptions,
   pillsEl: countryPills,
   onChange: () => {
-    writeStoredIds(
-      STORAGE_KEYS.countries,
-      countryFilterState.getSelectedIds()
-    );
+    writeStoredIds(STORAGE_KEYS.countries, countryFilterState.getSelectedIds());
     loadCompetitions()
       .then(() => loadMatches())
       .catch(error => setStatus(error.message));
@@ -474,10 +476,7 @@ const competitionFilterState = createMultiFilter({
   optionsEl: competitionOptions,
   pillsEl: competitionPills,
   onChange: () => {
-    writeStoredIds(
-      STORAGE_KEYS.competitions,
-      competitionFilterState.getSelectedIds()
-    );
+    writeStoredIds(STORAGE_KEYS.competitions, competitionFilterState.getSelectedIds());
     loadMatches().catch(error => setStatus(error.message));
   },
 });
@@ -488,10 +487,7 @@ const broadcasterFilterState = createMultiFilter({
   optionsEl: broadcasterOptions,
   pillsEl: broadcasterPills,
   onChange: () => {
-    writeStoredIds(
-      STORAGE_KEYS.broadcasters,
-      broadcasterFilterState.getSelectedIds()
-    );
+    writeStoredIds(STORAGE_KEYS.broadcasters, broadcasterFilterState.getSelectedIds());
     loadMatches().catch(error => setStatus(error.message));
   },
 });
@@ -508,18 +504,16 @@ const loadFilters = async () => {
   countryFilterState.setItems(
     countries,
     false,
-    landingIds.countryIds.length > 0
+    isSeoLandingPage
       ? landingIds.countryIds
       : readStoredIds(STORAGE_KEYS.countries)
   );
   broadcasterFilterState.setItems(
     broadcasters,
     false,
-    landingIds.broadcasterIds.length > 0
+    isSeoLandingPage
       ? landingIds.broadcasterIds
-      : isLandingLocked
-        ? []
-        : readStoredIds(STORAGE_KEYS.broadcasters)
+      : readStoredIds(STORAGE_KEYS.broadcasters)
   );
 
   await loadCompetitions();
@@ -536,11 +530,9 @@ const loadCompetitions = async () => {
   competitionFilterState.setItems(
     competitions,
     true,
-    landingIds.competitionIds.length > 0
+    isSeoLandingPage
       ? landingIds.competitionIds
-      : isLandingLocked
-        ? []
-        : readStoredIds(STORAGE_KEYS.competitions)
+      : readStoredIds(STORAGE_KEYS.competitions)
   );
 };
 
