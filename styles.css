@@ -674,6 +674,11 @@ button.ghost {
   font-size: 1.05rem;
 }
 
+.page-card h3 {
+  margin: 14px 0 0;
+  font-size: 0.96rem;
+}
+
 .page-card p {
   margin: 10px 0 0;
   color: var(--muted);

@@ -22,6 +22,35 @@ const slugify = value =>
     .replace(/^-+|-+$/g, "")
     .replace(/-+/g, "-");
 
+const titleCaseFromSlug = value =>
+  String(value || "")
+    .split("-")
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+// Add custom SEO pages here using known API ids.
+// Supported id fields: sport_id, country_id, competition_id, broadcaster_id
+const seo = {
+  // Popular competitions
+  "premier-league-on-tv": { competition_id: 18, sport_id: 1 },
+  "champions-league-on-tv": { competition_id: 4, sport_id: 1 },
+  "europa-league-on-tv": { competition_id: 12, sport_id: 1 },
+  "la-liga-on-tv": { competition_id: 410, sport_id: 1 },
+  "serie-a-on-tv": { competition_id: 409, sport_id: 1 },
+  "bundesliga-on-tv": { competition_id: 405, sport_id: 1 },
+  "ligue-1-on-tv": { competition_id: 408, sport_id: 1 },
+  "fa-cup-on-tv": { competition_id: 2694, sport_id: 1 },
+  "efl-championship-on-tv": { competition_id: 7, sport_id: 1 },
+
+  // Popular broadcasters
+  "sky-on-tv": { broadcaster_id: 15 },
+  "sky-sports-on-tv": { broadcaster_id: 15 },
+  "tnt-on-tv": { broadcaster_id: 18 },
+  "dazn-on-tv": { broadcaster_id: 6 },
+  "amazon-prime-video-on-tv": { broadcaster_id: 2 },
+};
+
 const fetchJson = async apiPath => {
   const url = `${apiUrl}${apiPath}`;
   const res = await fetch(url, {
@@ -370,6 +399,54 @@ const main = async () => {
         label: `${variant.label} football on TV`,
       });
     }
+  }
+
+  for (const [rawSlug, def] of Object.entries(seo)) {
+    const slug = String(rawSlug || "").trim().replace(/^\/+|\/+$/g, "");
+    if (!slug) continue;
+
+    const landingConfig = {
+      sportIds: Number.isFinite(def?.sport_id) ? [Number(def.sport_id)] : [],
+      countryIds: Number.isFinite(def?.country_id) ? [Number(def.country_id)] : [],
+      competitionIds: Number.isFinite(def?.competition_id) ? [Number(def.competition_id)] : [],
+      broadcasterIds: Number.isFinite(def?.broadcaster_id) ? [Number(def.broadcaster_id)] : [],
+      lockFilters: Boolean(def?.lock_filters ?? true),
+    };
+
+    const hasAtLeastOneFilter =
+      landingConfig.sportIds.length > 0 ||
+      landingConfig.countryIds.length > 0 ||
+      landingConfig.competitionIds.length > 0 ||
+      landingConfig.broadcasterIds.length > 0;
+
+    if (!hasAtLeastOneFilter) {
+      console.warn(`SEO generator: '${slug}' has no ids configured; skipping.`);
+      continue;
+    }
+
+    const labelBase = titleCaseFromSlug(slug.replace(/-on-tv$/, ""));
+    const pageLabel = def?.label || `${labelBase} on TV`;
+    const canonicalPath = `/${slug}/`;
+
+    specialPageDefs.push({
+      outDir: path.join(OUT_DIR, slug),
+      canonicalPath,
+      title: def?.title || `${labelBase} On TV - Where Is Match`,
+      description:
+        def?.description ||
+        `Find where to watch ${labelBase.toLowerCase()} live. See matches, kickoff times, and broadcasters.`,
+      heading: def?.heading || `${labelBase} on TV`,
+      intro:
+        def?.intro ||
+        `Browse ${labelBase.toLowerCase()} fixtures and find where each match is available to watch.`,
+      landingConfig,
+    });
+
+    seoPages.push({
+      url: `${SITE_URL}${canonicalPath}`,
+      path: canonicalPath,
+      label: pageLabel,
+    });
   }
 
   seoPages.sort((a, b) => a.label.localeCompare(b.label, "en"));
