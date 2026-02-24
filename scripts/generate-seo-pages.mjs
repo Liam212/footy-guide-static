@@ -177,20 +177,19 @@ const pageShell = ({
           <button id="prev-day" type="button" class="date-nav" aria-label="Previous day">
             &#x2039;
           </button>
-          <p id="date-banner"></p>
+          <p id="date-banner" class="date-label"></p>
           <button id="next-day" type="button" class="date-nav" aria-label="Next day">
             &#x203A;
           </button>
         </div>
-        <button id="today-day" type="button" class="date-nav date-nav-today" aria-label="Go to today" hidden>
-          Today
-        </button>
-      </section>
-
-      <section class="match-tools" aria-label="Match display options">
-        <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
-          Show past matches
-        </button>
+        <div class="date-banner-actions">
+          <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden" aria-label="Go to today">
+            Today
+          </button>
+          <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
+            Show past matches
+          </button>
+        </div>
       </section>
 
       <section id="matches" class="matches" aria-label="Match list"></section>
@@ -471,7 +470,10 @@ const main = async () => {
         canonicalPath: def.canonicalPath,
         heading: def.heading,
         intro: def.intro,
-        landingConfig: def.landingConfig,
+        landingConfig: {
+          dateWindowDays: 14,
+          ...(def.landingConfig || {}),
+        },
         footerLinksHtml,
       });
       await writeUtf8(path.join(def.outDir, "index.html"), html);

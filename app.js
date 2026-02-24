@@ -21,6 +21,10 @@ const landingIds = {
   broadcasterIds: (landingConfig?.broadcasterIds || []).map(Number).filter(Number.isFinite),
 };
 const isLandingLocked = Boolean(landingConfig?.lockFilters);
+const landingDateWindowDays = Number.isFinite(Number(landingConfig?.dateWindowDays))
+  ? Math.max(1, Math.floor(Number(landingConfig.dateWindowDays)))
+  : 1;
+const isDateRangeMode = landingDateWindowDays > 1;
 const apiClient = createApiClient({
   apiUrl,
 });
@@ -194,9 +198,12 @@ const getSelectedMatchFilterParams = () => {
 };
 
 const buildMatchParams = (date, filters = getSelectedMatchFilterParams()) => {
+  const endDate = isDateRangeMode
+    ? getShiftedDate(date, landingDateWindowDays - 1)
+    : date;
   const params = {
     start_date: date,
-    end_date: date,
+    end_date: endDate,
   };
   if (filters.sportIds.length) params.sport_ids = filters.sportIds;
   if (filters.countryIds.length) params.country_ids = filters.countryIds;
@@ -565,6 +572,16 @@ const getMatchStatus = (date, time, sportId) => {
   return "upcoming";
 };
 
+const formatCompactDate = value => {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+};
+
 const formatTeams = match => {
   const home = match.home_team?.name || "TBD";
   const away = match.away_team?.name || "";
@@ -610,7 +627,9 @@ const renderMatches = matches => {
 
     const time = document.createElement("div");
     time.className = "match-time";
-    time.textContent = match.time || "";
+    time.textContent = isDateRangeMode
+      ? `${formatCompactDate(matchDate)}${match.time ? ` ${match.time}` : ""}`
+      : match.time || "";
 
     const title = document.createElement("div");
     title.className = "match-title";
@@ -660,7 +679,9 @@ const loadMatches = async () => {
   renderMatches(matches);
   setStatus(`Showing ${matches.length} match(es).`);
   if (dateBannerEl) {
-    dateBannerEl.textContent = `${formatBannerDate(date)}`;
+    dateBannerEl.textContent = isDateRangeMode
+      ? `Next ${landingDateWindowDays} days`
+      : `${formatBannerDate(date)}`;
   }
   updateTodayButtonVisibility();
 };
@@ -676,7 +697,9 @@ const handleInit = async () => {
     updateSeoMeta();
   }
   if (dateBannerEl) {
-    dateBannerEl.textContent = `${formatBannerDate(currentDate)}`;
+    dateBannerEl.textContent = isDateRangeMode
+      ? `Next ${landingDateWindowDays} days`
+      : `${formatBannerDate(currentDate)}`;
   }
   updateTodayButtonVisibility();
 
