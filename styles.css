@@ -584,10 +584,6 @@ button.ghost {
   gap: 10px 14px;
 }
 
-.footer-sports {
-  display: contents;
-}
-
 .footer-links a {
   color: var(--muted);
   text-decoration: none;
@@ -604,6 +600,42 @@ button.ghost {
   margin: 10px 0 0;
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.footer-more {
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(56, 163, 165, 0.06);
+}
+
+.footer-more summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.footer-more-links {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 4px 2px;
+}
+
+.footer-more-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+  border-bottom: 1px solid transparent;
+}
+
+.footer-more-links a:hover {
+  color: var(--accent);
+  border-bottom-color: rgba(56, 163, 165, 0.45);
 }
 
 .page {

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const SITE_URL = "https://whereismatch.com";
@@ -42,6 +42,7 @@ const pageShell = ({
   heading,
   intro,
   landingConfig,
+  footerLinksHtml,
 }) => {
   const canonicalUrl = `${SITE_URL}${canonicalPath}`;
 
@@ -168,11 +169,16 @@ const pageShell = ({
       <footer class="site-footer" aria-label="Site links">
         <nav class="footer-links">
           <a href="/">Home</a>
-          <span id="footer-sports" class="footer-sports" aria-label="Sports"></span>
           <a href="/about/">About</a>
           <a href="/faq/">FAQ</a>
           <a href="/privacy/">Privacy</a>
         </nav>
+        <details class="footer-more">
+          <summary>Browse pages</summary>
+          <div class="footer-more-links">
+            ${footerLinksHtml || ""}
+          </div>
+        </details>
         <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
       </footer>
     </div>
@@ -217,6 +223,23 @@ const writeUtf8 = async (filePath, contents) => {
   await writeFile(filePath, contents, "utf8");
 };
 
+const injectSeoPages = async ({ filePath, linksHtml }) => {
+  const placeholder = "<!-- SEO_PAGES -->";
+  let contents;
+  try {
+    contents = await readFile(filePath, "utf8");
+  } catch {
+    return;
+  }
+
+  if (!contents.includes(placeholder)) {
+    return;
+  }
+
+  const next = contents.replace(placeholder, linksHtml);
+  await writeUtf8(filePath, next);
+};
+
 const buildSitemap = urls => {
   const body = urls
     .map(loc => `  <url>\n    <loc>${loc}</loc>\n  </url>`)
@@ -242,6 +265,10 @@ const main = async () => {
     `${SITE_URL}/privacy/`,
   ]);
 
+  const seoPages = [];
+  const sportPageDefs = [];
+  const specialPageDefs = [];
+
   for (const sport of sports) {
     if (!sport || !Number.isFinite(sport.id) || !sport.name) continue;
     const slug = slugify(sport.name);
@@ -249,16 +276,16 @@ const main = async () => {
 
     const canonicalPath = `/watch/${slug}/`;
     const outDir = path.join(OUT_DIR, "watch", slug);
-    await ensureDir(outDir);
-
     const title = `${sport.name} On TV - Where Is Match`;
     const description = `Find where to watch ${sport.name} live. Browse matches and broadcasters with fast filters.`;
     const heading = `${sport.name} On TV`;
     const intro = `Browse ${sport.name} fixtures and find the broadcaster showing each match.`;
-    const html = pageShell({
+
+    sportPageDefs.push({
+      outDir,
+      canonicalPath,
       title,
       description,
-      canonicalPath,
       heading,
       intro,
       landingConfig: {
@@ -266,8 +293,11 @@ const main = async () => {
       },
     });
 
-    await writeUtf8(path.join(outDir, "index.html"), html);
-    sitemapUrls.add(`${SITE_URL}${canonicalPath}`);
+    seoPages.push({
+      url: `${SITE_URL}${canonicalPath}`,
+      path: canonicalPath,
+      label: `${sport.name} on TV`,
+    });
   }
 
   const pickFootballSport = () => {
@@ -317,17 +347,17 @@ const main = async () => {
 
       const canonicalPath = `/${variant.slug}/`;
       const outDir = path.join(OUT_DIR, variant.slug);
-      await ensureDir(outDir);
 
       const title = `${variant.label} Football On TV - Where Is Match`;
       const description = `Find where to watch ${variant.label.toLowerCase()} football. Filter fixtures and broadcasters for ${variant.country}.`;
       const heading = `${variant.label} football on TV`;
       const intro = `Browse football fixtures for ${variant.country} and find which broadcaster is showing each match.`;
 
-      const html = pageShell({
+      specialPageDefs.push({
+        outDir,
+        canonicalPath,
         title,
         description,
-        canonicalPath,
         heading,
         intro,
         landingConfig: {
@@ -336,10 +366,47 @@ const main = async () => {
         },
       });
 
-      await writeUtf8(path.join(outDir, "index.html"), html);
-      sitemapUrls.add(`${SITE_URL}${canonicalPath}`);
+      seoPages.push({
+        url: `${SITE_URL}${canonicalPath}`,
+        path: canonicalPath,
+        label: `${variant.label} football on TV`,
+      });
     }
   }
+
+  seoPages.sort((a, b) => a.label.localeCompare(b.label, "en"));
+  const footerLinksHtml = seoPages
+    .map(page => `<a href="${page.path}">${escapeHtml(page.label)}</a>`)
+    .join("\n            ");
+
+  const staticPagesToInject = [
+    path.join(OUT_DIR, "index.html"),
+    path.join(OUT_DIR, "about", "index.html"),
+    path.join(OUT_DIR, "faq", "index.html"),
+    path.join(OUT_DIR, "privacy", "index.html"),
+  ];
+
+  const allPageDefs = [...sportPageDefs, ...specialPageDefs];
+  await Promise.all(
+    allPageDefs.map(async def => {
+      await ensureDir(def.outDir);
+      const html = pageShell({
+        title: def.title,
+        description: def.description,
+        canonicalPath: def.canonicalPath,
+        heading: def.heading,
+        intro: def.intro,
+        landingConfig: def.landingConfig,
+        footerLinksHtml,
+      });
+      await writeUtf8(path.join(def.outDir, "index.html"), html);
+      sitemapUrls.add(`${SITE_URL}${def.canonicalPath}`);
+    })
+  );
+
+  await Promise.all(
+    staticPagesToInject.map(filePath => injectSeoPages({ filePath, linksHtml: footerLinksHtml }))
+  );
 
   const sitemap = buildSitemap(Array.from(sitemapUrls));
   await writeUtf8(path.join(OUT_DIR, "sitemap.xml"), sitemap);
