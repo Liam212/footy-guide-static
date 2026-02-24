@@ -360,6 +360,7 @@ const main = async () => {
         landingConfig: {
           sportIds: [footballSport.id],
           countryIds: [country.id],
+          lockFilters: true,
         },
       });
 

@@ -10,6 +10,16 @@ import { buildParams, createApiClient } from "./api-client.js";
 const config = window.FOOTY_CONFIG || {};
 const apiUrl = (config.apiUrl || "/proxy").trim();
 const siteUrl = String(config.siteUrl || "https://whereismatch.com").trim().replace(/\/$/, "");
+const landingConfig = window.FOOTY_LANDING && typeof window.FOOTY_LANDING === "object"
+  ? window.FOOTY_LANDING
+  : null;
+const landingIds = {
+  sportIds: (landingConfig?.sportIds || []).map(Number).filter(Number.isFinite),
+  countryIds: (landingConfig?.countryIds || []).map(Number).filter(Number.isFinite),
+  competitionIds: (landingConfig?.competitionIds || []).map(Number).filter(Number.isFinite),
+  broadcasterIds: (landingConfig?.broadcasterIds || []).map(Number).filter(Number.isFinite),
+};
+const isLandingLocked = Boolean(landingConfig?.lockFilters);
 const apiClient = createApiClient({
   apiUrl,
 });
@@ -77,32 +87,12 @@ const STORAGE_KEYS = {
   broadcasters: "simplifiedBroadcasters",
 };
 
-const applyLandingDefaults = () => {
-  const landing = window.FOOTY_LANDING || {};
-  const normalize = ids =>
-    (Array.isArray(ids) ? ids : [])
-      .map(Number)
-      .filter(value => Number.isFinite(value));
-
-  const next = {
-    [STORAGE_KEYS.sports]: normalize(landing.sportIds),
-    [STORAGE_KEYS.countries]: normalize(landing.countryIds),
-    [STORAGE_KEYS.competitions]: normalize(landing.competitionIds),
-    [STORAGE_KEYS.broadcasters]: normalize(landing.broadcasterIds),
-  };
-
-  const hasAny = Object.values(next).some(values => values.length > 0);
-  if (!hasAny) return;
-
-  // Landing pages should reflect their intended filters even if the user already has
-  // stored selections from a previous session.
-  Object.entries(next).forEach(([key, values]) => {
-    if (values.length === 0) {
-      localStorage.removeItem(key);
-      return;
-    }
-    localStorage.setItem(key, JSON.stringify(values));
-  });
+const initLandingUi = () => {
+  if (!landingConfig) return;
+  if (!isLandingLocked) return;
+  document.documentElement.setAttribute("data-landing-locked", "true");
+  const controls = document.querySelector(".controls");
+  if (controls) controls.hidden = true;
 };
 
 const THEME_STORAGE_KEY = "simplifiedTheme";
@@ -271,8 +261,12 @@ const getCheckedSportIds = () =>
     .map(input => Number(input.value))
     .filter(value => Number.isFinite(value));
 
-const renderSportPills = sports => {
-  const stored = new Set(readStoredIds(STORAGE_KEYS.sports));
+const renderSportPills = (sports, selectedIds) => {
+  const stored = new Set(
+    Array.isArray(selectedIds) && selectedIds.length > 0
+      ? selectedIds
+      : readStoredIds(STORAGE_KEYS.sports)
+  );
   sportPills.innerHTML = "";
   const fragment = document.createDocumentFragment();
   sports.forEach(sport => {
@@ -510,16 +504,22 @@ const loadFilters = async () => {
     fetchJson("/broadcasters"),
   ]);
 
-  renderSportPills(sports);
+  renderSportPills(sports, landingIds.sportIds);
   countryFilterState.setItems(
     countries,
     false,
-    readStoredIds(STORAGE_KEYS.countries)
+    landingIds.countryIds.length > 0
+      ? landingIds.countryIds
+      : readStoredIds(STORAGE_KEYS.countries)
   );
   broadcasterFilterState.setItems(
     broadcasters,
     false,
-    readStoredIds(STORAGE_KEYS.broadcasters)
+    landingIds.broadcasterIds.length > 0
+      ? landingIds.broadcasterIds
+      : isLandingLocked
+        ? []
+        : readStoredIds(STORAGE_KEYS.broadcasters)
   );
 
   await loadCompetitions();
@@ -536,7 +536,11 @@ const loadCompetitions = async () => {
   competitionFilterState.setItems(
     competitions,
     true,
-    readStoredIds(STORAGE_KEYS.competitions)
+    landingIds.competitionIds.length > 0
+      ? landingIds.competitionIds
+      : isLandingLocked
+        ? []
+        : readStoredIds(STORAGE_KEYS.competitions)
   );
 };
 
@@ -669,7 +673,7 @@ const loadMatches = async () => {
 
 const handleInit = async () => {
   updateSeoMeta();
-  applyLandingDefaults();
+  initLandingUi();
   initTheme();
   const urlDate = readDateFromUrl();
   currentDate = urlDate || todayIso();
