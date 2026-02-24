@@ -1,31 +1,72 @@
-<!doctype html>
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+const SITE_URL = "https://whereismatch.com";
+const API_URL_PLACEHOLDER = "${API_URL}";
+const ENVIROMENT_PLACEHOLDER = "${ENVIROMENT}";
+const POSTHOG_KEY_PLACEHOLDER = "${POSTHOG_KEY}";
+const POSTHOG_HOST_PLACEHOLDER = "${POSTHOG_HOST}";
+const OUT_DIR = process.env.OUT_DIR || process.cwd();
+const RAW_API_URL = process.env.API_URL || "";
+
+const apiUrl = RAW_API_URL.trim().replace(/\/$/, "");
+if (!apiUrl) {
+  throw new Error("Missing API_URL. Provide API_URL as an env var during generation.");
+}
+
+const slugify = value =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+
+const fetchJson = async apiPath => {
+  const url = `${apiUrl}${apiPath}`;
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url} (${res.status})`);
+  }
+  return res.json();
+};
+
+const pageShell = ({
+  title,
+  description,
+  canonicalPath,
+  heading,
+  intro,
+  landingConfig,
+}) => {
+  const canonicalUrl = `${SITE_URL}${canonicalPath}`;
+
+  return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Where Is Match - Find Sports On TV</title>
-    <meta
-      name="description"
-      content="Find where to watch live sport. Filter by sport, country, competition, and broadcaster to see what's on today and upcoming fixtures." />
+    <title>${escapeHtml(title)}</title>
+    <meta name="description" content="${escapeHtml(description)}" />
     <meta name="robots" content="index,follow" />
-    <link rel="canonical" href="https://whereismatch.com/" />
+    <link rel="canonical" href="${canonicalUrl}" />
     <meta name="theme-color" content="#38a3a5" />
 
     <meta property="og:site_name" content="Where Is Match" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Where Is Match - Find Sports On TV" />
-    <meta
-      property="og:description"
-      content="Find where to watch live sport. Filter by sport, country, competition, and broadcaster." />
-    <meta property="og:url" content="https://whereismatch.com/" />
-    <meta property="og:image" content="https://whereismatch.com/og.svg" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${canonicalUrl}" />
+    <meta property="og:image" content="${SITE_URL}/og.svg" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Where Is Match - Find Sports On TV" />
-    <meta
-      name="twitter:description"
-      content="Find where to watch live sport. Filter by sport, country, competition, and broadcaster." />
-    <meta name="twitter:image" content="https://whereismatch.com/og.svg" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${SITE_URL}/og.svg" />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
@@ -34,37 +75,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="/styles.css" />
-
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Where Is Match",
-        "url": "https://whereismatch.com/",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://whereismatch.com/?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Where Is Match",
-        "url": "https://whereismatch.com/",
-        "applicationCategory": "SportsApplication",
-        "operatingSystem": "Web"
-      }
-    </script>
   </head>
   <body>
     <div class="app">
       <header class="site-header">
         <div class="site-header-main">
-          <h1>Where Is Match</h1>
-          <p>Find where to watch live sport. Filter by sport, country, competition, and broadcaster.</p>
+          <p class="site-kicker"><a href="/">Where Is Match</a></p>
+          <h1>${escapeHtml(heading)}</h1>
+          <p>${escapeHtml(intro)}</p>
         </div>
       </header>
 
@@ -73,6 +91,7 @@
           Dark mode
         </button>
       </div>
+
       <section class="controls" aria-label="Filters">
         <div class="control full-row">
           <label>Sports</label>
@@ -157,16 +176,94 @@
 
     <script>
       window.FOOTY_CONFIG = {
-        apiUrl: "${API_URL}",
-        siteUrl: "https://whereismatch.com",
+        apiUrl: "${API_URL_PLACEHOLDER}",
+        siteUrl: "${SITE_URL}",
       };
     </script>
     <script>
-      if ("${ENVIROMENT}" === "production" && "${POSTHOG_KEY}" && "${POSTHOG_HOST}") {
+      if (
+        "${ENVIROMENT_PLACEHOLDER}" === "production" &&
+        "${POSTHOG_KEY_PLACEHOLDER}" &&
+        "${POSTHOG_HOST_PLACEHOLDER}"
+      ) {
         !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-        posthog.init('${POSTHOG_KEY}',{api_host:'${POSTHOG_HOST}', defaults:'2026-01-30'})
+        posthog.init('${POSTHOG_KEY_PLACEHOLDER}',{api_host:'${POSTHOG_HOST_PLACEHOLDER}', defaults:'2026-01-30'})
       }
+    </script>
+    <script>
+      window.FOOTY_LANDING = ${JSON.stringify(landingConfig || {})};
     </script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
+`;
+};
+
+const escapeHtml = value =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;");
+
+const ensureDir = async dir => {
+  await mkdir(dir, { recursive: true });
+};
+
+const writeUtf8 = async (filePath, contents) => {
+  await writeFile(filePath, contents, "utf8");
+};
+
+const buildSitemap = urls => {
+  const body = urls
+    .map(loc => `  <url>\n    <loc>${loc}</loc>\n  </url>`)
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+};
+
+const main = async () => {
+  const sports = await fetchJson("/sports");
+  if (!Array.isArray(sports)) {
+    throw new Error("Unexpected /sports response (expected array).");
+  }
+
+  const sitemapUrls = new Set([
+    `${SITE_URL}/`,
+    `${SITE_URL}/about/`,
+    `${SITE_URL}/faq/`,
+    `${SITE_URL}/privacy/`,
+  ]);
+
+  for (const sport of sports) {
+    if (!sport || !Number.isFinite(sport.id) || !sport.name) continue;
+    const slug = slugify(sport.name);
+    if (!slug) continue;
+
+    const canonicalPath = `/watch/${slug}/`;
+    const outDir = path.join(OUT_DIR, "watch", slug);
+    await ensureDir(outDir);
+
+    const title = `${sport.name} On TV - Where Is Match`;
+    const description = `Find where to watch ${sport.name} live. Browse matches and broadcasters with fast filters.`;
+    const heading = `${sport.name} On TV`;
+    const intro = `Browse ${sport.name} fixtures and find the broadcaster showing each match.`;
+    const html = pageShell({
+      title,
+      description,
+      canonicalPath,
+      heading,
+      intro,
+      landingConfig: {
+        sportIds: [sport.id],
+      },
+    });
+
+    await writeUtf8(path.join(outDir, "index.html"), html);
+    sitemapUrls.add(`${SITE_URL}${canonicalPath}`);
+  }
+
+  const sitemap = buildSitemap(Array.from(sitemapUrls));
+  await writeUtf8(path.join(OUT_DIR, "sitemap.xml"), sitemap);
+};
+
+await main();

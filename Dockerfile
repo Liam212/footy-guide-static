@@ -1,3 +1,15 @@
+FROM node:20-alpine AS seo
+
+WORKDIR /app
+
+ARG API_URL
+ARG SEO_GENERATE=1
+ENV API_URL=${API_URL}
+
+COPY . /app/
+
+RUN if [ "${SEO_GENERATE}" = "1" ]; then node /app/scripts/generate-seo-pages.mjs; fi
+
 FROM nginx:alpine
 
 ARG API_URL
@@ -10,7 +22,7 @@ ENV POSTHOG_HOST=${POSTHOG_HOST}
 ENV ENVIROMENT=${ENVIROMENT}
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY . /usr/share/nginx/html/
+COPY --from=seo /app/ /usr/share/nginx/html/
 
 RUN apk add --no-cache gettext \
   && find /usr/share/nginx/html -type f -name "*.html" \

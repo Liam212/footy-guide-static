@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Where Is Match">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b2b3a" />
+      <stop offset="0.55" stop-color="#22577a" />
+      <stop offset="1" stop-color="#38a3a5" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38a3a5" />
+      <stop offset="1" stop-color="#57cc99" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="940" cy="160" r="240" fill="#57cc99" fill-opacity="0.14" />
+  <circle cx="240" cy="520" r="320" fill="#38a3a5" fill-opacity="0.14" />
+
+  <rect x="90" y="130" width="1020" height="370" rx="36" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.16" />
+  <rect x="140" y="190" width="92" height="92" rx="22" fill="url(#accent)" />
+  <path d="M166 214h40v8h-40zm0 16h26v8h-26zm0 16h34v8h-34z" fill="#0b2b3a" fill-opacity="0.92" />
+  <circle cx="208" cy="236" r="9" fill="#0b2b3a" fill-opacity="0.92" />
+
+  <text x="260" y="255" font-family="Manrope, system-ui, -apple-system, sans-serif" font-size="64" font-weight="700" fill="#e8f2f8">Where Is Match</text>
+  <text x="260" y="320" font-family="Manrope, system-ui, -apple-system, sans-serif" font-size="34" font-weight="400" fill="#d7e8f3" opacity="0.95">Find where to watch live sport</text>
+  <text x="260" y="372" font-family="Manrope, system-ui, -apple-system, sans-serif" font-size="28" font-weight="400" fill="#c8e0ee" opacity="0.9">Filter by sport, country, competition, and broadcaster</text>
+</svg>

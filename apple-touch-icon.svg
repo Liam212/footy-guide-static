@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Where Is Match">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38a3a5" />
+      <stop offset="1" stop-color="#57cc99" />
+    </linearGradient>
+  </defs>
+  <rect x="14" y="14" width="152" height="152" rx="40" fill="url(#g)" />
+  <path
+    d="M52 62h76v10H52zm0 22h50v10H52zm0 22h64v10H52z"
+    fill="#0b2b3a"
+    fill-opacity="0.92" />
+  <circle cx="126" cy="92" r="14" fill="#0b2b3a" fill-opacity="0.92" />
+</svg>

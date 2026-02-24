@@ -9,10 +9,36 @@ import { buildParams, createApiClient } from "./api-client.js";
 
 const config = window.FOOTY_CONFIG || {};
 const apiUrl = (config.apiUrl || "/proxy").trim();
+const siteUrl = String(config.siteUrl || "https://whereismatch.com").trim().replace(/\/$/, "");
 const apiClient = createApiClient({
   apiUrl,
 });
 const { fetchJson } = apiClient;
+
+const updateSeoMeta = () => {
+  const canonicalHref = `${siteUrl}${window.location.pathname}`;
+
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.setAttribute("rel", "canonical");
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute("href", canonicalHref);
+
+  let robots = document.querySelector('meta[name="robots"]');
+  if (!robots) {
+    robots = document.createElement("meta");
+    robots.setAttribute("name", "robots");
+    document.head.appendChild(robots);
+  }
+  robots.setAttribute(
+    "content",
+    window.location.search && window.location.search.length > 0
+      ? "noindex,follow"
+      : "index,follow"
+  );
+};
 
 const sportPills = document.getElementById("sport-pills");
 
@@ -49,6 +75,22 @@ const STORAGE_KEYS = {
   countries: "simplifiedCountries",
   competitions: "simplifiedCompetitions",
   broadcasters: "simplifiedBroadcasters",
+};
+
+const applyLandingDefaults = () => {
+  const landing = window.FOOTY_LANDING || {};
+  const setIfMissing = (storageKey, ids) => {
+    if (!Array.isArray(ids) || ids.length === 0) return;
+    if (localStorage.getItem(storageKey) !== null) return;
+    const normalized = ids.map(Number).filter(value => Number.isFinite(value));
+    if (normalized.length === 0) return;
+    localStorage.setItem(storageKey, JSON.stringify(normalized));
+  };
+
+  setIfMissing(STORAGE_KEYS.sports, landing.sportIds);
+  setIfMissing(STORAGE_KEYS.countries, landing.countryIds);
+  setIfMissing(STORAGE_KEYS.competitions, landing.competitionIds);
+  setIfMissing(STORAGE_KEYS.broadcasters, landing.broadcasterIds);
 };
 
 const THEME_STORAGE_KEY = "simplifiedTheme";
@@ -517,8 +559,27 @@ const formatTeams = match => {
 const renderMatches = matches => {
   matchesEl.innerHTML = "";
   if (!matches.length) {
-    matchesEl.innerHTML =
-      '<div class="match-card">No matches found for these filters.</div>';
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.innerHTML = `
+      <h2>No matches found</h2>
+      <p>Try broadening your filters, switching date, or jumping to a sport page.</p>
+      <div class="empty-actions">
+        <button type="button" class="ghost" data-action="reset">Reset filters</button>
+        <a class="empty-link" href="/">Home</a>
+        <a class="empty-link" href="/watch/football/">Football</a>
+        <a class="empty-link" href="/watch/rugby/">Rugby</a>
+        <a class="empty-link" href="/watch/cricket/">Cricket</a>
+        <a class="empty-link" href="/watch/tennis/">Tennis</a>
+      </div>
+    `;
+    empty.querySelector('[data-action="reset"]').addEventListener("click", () => {
+      Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+      const url = new URL(window.location.href);
+      url.searchParams.delete("date");
+      window.location.href = `${url.pathname}${url.search}`;
+    });
+    matchesEl.appendChild(empty);
     updatePastMatchesVisibility();
     return;
   }
@@ -572,7 +633,8 @@ const renderMatches = matches => {
 const loadMatches = async () => {
   if (!currentDate) {
     currentDate = todayIso();
-    writeDateToUrl(currentDate);
+    writeDateToUrl(null);
+    updateSeoMeta();
   }
   const date = currentDate;
   updateTodayButtonVisibility();
@@ -589,9 +651,15 @@ const loadMatches = async () => {
 };
 
 const handleInit = async () => {
+  updateSeoMeta();
+  applyLandingDefaults();
   initTheme();
-  currentDate = readDateFromUrl() || todayIso();
-  writeDateToUrl(currentDate);
+  const urlDate = readDateFromUrl();
+  currentDate = urlDate || todayIso();
+  if (urlDate) {
+    writeDateToUrl(currentDate);
+    updateSeoMeta();
+  }
   if (dateBannerEl) {
     dateBannerEl.textContent = `${formatBannerDate(currentDate)}`;
   }
@@ -608,7 +676,8 @@ const handleInit = async () => {
 const shiftDay = direction => {
   const next = getShiftedDate(currentDate, direction);
   currentDate = next;
-  writeDateToUrl(currentDate);
+  writeDateToUrl(currentDate === todayIso() ? null : currentDate);
+  updateSeoMeta();
   loadMatches().catch(error => setStatus(error.message));
 };
 
@@ -652,7 +721,8 @@ if (prevDayButton && nextDayButton) {
 if (todayDayButton) {
   todayDayButton.addEventListener("click", () => {
     currentDate = todayIso();
-    writeDateToUrl(currentDate);
+    writeDateToUrl(null);
+    updateSeoMeta();
     loadMatches().catch(error => setStatus(error.message));
   });
 }
