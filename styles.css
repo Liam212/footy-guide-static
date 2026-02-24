@@ -610,10 +610,11 @@ button.ghost {
   background: rgba(56, 163, 165, 0.06);
 }
 
-.footer-more summary {
-  cursor: pointer;
-  font-weight: 700;
+.footer-more-title {
+  margin: 0;
+  font-weight: 800;
   color: var(--accent);
+  font-size: 0.9rem;
 }
 
 .footer-more-links {
