@@ -79,18 +79,24 @@ const pageShell = ({
   <body>
     <div class="app">
       <header class="site-header">
-        <div class="site-header-main">
-          <p class="site-kicker"><a href="/">Where Is Match</a></p>
-          <h1>${escapeHtml(heading)}</h1>
-          <p>${escapeHtml(intro)}</p>
+        <div class="site-header-row">
+          <div class="site-header-main">
+            <p class="site-kicker"><a href="/">Where Is Match</a></p>
+            <h1>${escapeHtml(heading)}</h1>
+            <p>${escapeHtml(intro)}</p>
+          </div>
+          <div class="site-header-actions">
+            <button
+              id="theme-toggle"
+              type="button"
+              class="theme-toggle icon-only"
+              aria-label="Toggle theme"
+              title="Toggle theme">
+              <span class="sr-only">Toggle theme</span>
+            </button>
+          </div>
         </div>
       </header>
-
-      <div class="app-top">
-        <button id="theme-toggle" type="button" class="theme-toggle" aria-label="Toggle dark mode">
-          Dark mode
-        </button>
-      </div>
 
       <section class="controls" aria-label="Filters">
         <div class="control full-row">
@@ -224,6 +230,11 @@ const main = async () => {
     throw new Error("Unexpected /sports response (expected array).");
   }
 
+  const countries = await fetchJson("/countries");
+  if (!Array.isArray(countries)) {
+    throw new Error("Unexpected /countries response (expected array).");
+  }
+
   const sitemapUrls = new Set([
     `${SITE_URL}/`,
     `${SITE_URL}/about/`,
@@ -257,6 +268,77 @@ const main = async () => {
 
     await writeUtf8(path.join(outDir, "index.html"), html);
     sitemapUrls.add(`${SITE_URL}${canonicalPath}`);
+  }
+
+  const pickFootballSport = () => {
+    const candidates = sports
+      .filter(sport => sport && Number.isFinite(sport.id) && sport.name)
+      .map(sport => ({ sport, slug: slugify(sport.name) }))
+      .filter(entry => entry.slug);
+
+    const exact = candidates.find(entry => entry.slug === "football");
+    if (exact) return exact.sport;
+
+    const soccer = candidates.find(entry => entry.slug === "soccer");
+    if (soccer) return soccer.sport;
+
+    const contains = candidates.find(entry => /football/i.test(entry.sport.name));
+    return contains ? contains.sport : null;
+  };
+
+  const findCountryByName = name => {
+    const target = String(name || "").trim().toLowerCase();
+    return (
+      countries.find(country =>
+        String(country?.name || "").trim().toLowerCase() === target
+      ) || null
+    );
+  };
+
+  const footballSport = pickFootballSport();
+  if (!footballSport) {
+    console.warn("SEO generator: could not identify football sport; skipping country football pages.");
+  } else {
+    const variants = [
+      { slug: "english-football-on-tv", country: "England", label: "English" },
+      { slug: "spanish-football-on-tv", country: "Spain", label: "Spanish" },
+      { slug: "german-football-on-tv", country: "Germany", label: "German" },
+      { slug: "italian-football-on-tv", country: "Italy", label: "Italian" },
+    ];
+
+    for (const variant of variants) {
+      const country = findCountryByName(variant.country);
+      if (!country || !Number.isFinite(country.id)) {
+        console.warn(
+          `SEO generator: missing country '${variant.country}'; skipping ${variant.slug}.`
+        );
+        continue;
+      }
+
+      const canonicalPath = `/${variant.slug}/`;
+      const outDir = path.join(OUT_DIR, variant.slug);
+      await ensureDir(outDir);
+
+      const title = `${variant.label} Football On TV - Where Is Match`;
+      const description = `Find where to watch ${variant.label.toLowerCase()} football. Filter fixtures and broadcasters for ${variant.country}.`;
+      const heading = `${variant.label} football on TV`;
+      const intro = `Browse football fixtures for ${variant.country} and find which broadcaster is showing each match.`;
+
+      const html = pageShell({
+        title,
+        description,
+        canonicalPath,
+        heading,
+        intro,
+        landingConfig: {
+          sportIds: [footballSport.id],
+          countryIds: [country.id],
+        },
+      });
+
+      await writeUtf8(path.join(outDir, "index.html"), html);
+      sitemapUrls.add(`${SITE_URL}${canonicalPath}`);
+    }
   }
 
   const sitemap = buildSitemap(Array.from(sitemapUrls));

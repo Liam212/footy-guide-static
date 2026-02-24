@@ -49,6 +49,7 @@ a {
 }
 
 .site-header {
+  position: relative;
   margin-top: 10px;
   padding: 18px 18px 14px;
   border-radius: 18px;
@@ -61,20 +62,31 @@ a {
 }
 
 .site-header-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
+  display: block;
 }
 
 .site-header-actions {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 12px;
+  right: 12px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
 }
 
-.site-header-actions .theme-toggle {
-  margin-top: 2px;
+.site-header-main {
+  padding-right: 56px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .site-kicker {
@@ -112,6 +124,33 @@ a {
   box-shadow: none;
   padding: 8px 12px;
   font-size: 0.85rem;
+}
+
+:root {
+  --theme-toggle-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79z"/></svg>');
+}
+
+:root[data-theme="dark"] {
+  --theme-toggle-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>');
+}
+
+.theme-toggle.icon-only {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle.icon-only::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: var(--ink);
+  -webkit-mask: var(--theme-toggle-icon) no-repeat center / contain;
+  mask: var(--theme-toggle-icon) no-repeat center / contain;
 }
 
 .theme-toggle:hover {

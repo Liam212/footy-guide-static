@@ -137,8 +137,13 @@ const applyTheme = theme => {
   document.documentElement.setAttribute("data-theme", theme);
   if (themeToggleButton) {
     const next = theme === "dark" ? "light" : "dark";
-    themeToggleButton.textContent = theme === "dark" ? "Light mode" : "Dark mode";
     themeToggleButton.setAttribute("aria-label", `Switch to ${next} mode`);
+    themeToggleButton.setAttribute("title", `Switch to ${next} mode`);
+
+    const sr = themeToggleButton.querySelector(".sr-only");
+    if (sr) {
+      sr.textContent = `Switch to ${next} mode`;
+    }
   }
 };
 
