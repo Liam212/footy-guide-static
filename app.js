@@ -262,9 +262,9 @@ const prefetchDateMatches = date => {
 
 const updateTodayButtonVisibility = () => {
   if (!todayDayButton) return;
-  const isToday = (currentDate || todayIso()) === todayIso();
-  todayDayButton.classList.toggle("is-reserved-hidden", isToday);
-  todayDayButton.setAttribute("aria-hidden", String(isToday));
+  const shouldHide = isDateRangeMode || (currentDate || todayIso()) === todayIso();
+  todayDayButton.classList.toggle("is-reserved-hidden", shouldHide);
+  todayDayButton.setAttribute("aria-hidden", String(shouldHide));
 };
 
 const getCheckedSportIds = () =>
