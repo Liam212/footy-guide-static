@@ -65,9 +65,39 @@ const nextDayButton = document.getElementById("next-day");
 const togglePastMatchesButton = document.getElementById("toggle-past-matches");
 const matchesEl = document.getElementById("matches");
 const themeToggleButton = document.getElementById("theme-toggle");
+const footerSportsEl = document.getElementById("footer-sports");
+
+const slugify = value =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
 
 const setStatus = message => {
   statusEl.textContent = message || "";
+};
+
+const renderFooterSports = sports => {
+  if (!footerSportsEl) return;
+  footerSportsEl.innerHTML = "";
+  if (!Array.isArray(sports) || sports.length === 0) return;
+
+  const fragment = document.createDocumentFragment();
+  sports
+    .filter(sport => sport && sport.name)
+    .slice(0, 12)
+    .forEach(sport => {
+      const slug = slugify(sport.name);
+      if (!slug) return;
+      const link = document.createElement("a");
+      link.href = `/watch/${slug}/`;
+      link.textContent = sport.name;
+      fragment.appendChild(link);
+    });
+
+  footerSportsEl.appendChild(fragment);
 };
 
 const STORAGE_KEYS = {
@@ -493,6 +523,7 @@ const loadFilters = async () => {
     fetchJson("/broadcasters"),
   ]);
 
+  renderFooterSports(sports);
   renderSportPills(sports);
   countryFilterState.setItems(
     countries,

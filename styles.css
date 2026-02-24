@@ -533,6 +533,10 @@ button.ghost {
   gap: 10px 14px;
 }
 
+.footer-sports {
+  display: contents;
+}
+
 .footer-links a {
   color: var(--muted);
   text-decoration: none;

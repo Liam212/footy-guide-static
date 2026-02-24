@@ -162,10 +162,7 @@ const pageShell = ({
       <footer class="site-footer" aria-label="Site links">
         <nav class="footer-links">
           <a href="/">Home</a>
-          <a href="/watch/football/">Football</a>
-          <a href="/watch/rugby/">Rugby</a>
-          <a href="/watch/cricket/">Cricket</a>
-          <a href="/watch/tennis/">Tennis</a>
+          <span id="footer-sports" class="footer-sports" aria-label="Sports"></span>
           <a href="/about/">About</a>
           <a href="/faq/">FAQ</a>
           <a href="/privacy/">Privacy</a>
