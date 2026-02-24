@@ -400,6 +400,44 @@ const main = async () => {
     }
   }
 
+  specialPageDefs.push({
+    outDir: path.join(OUT_DIR, "matches-today"),
+    canonicalPath: "/matches-today/",
+    title: "Matches Today - Where Is Match",
+    description: "See what live sport is on today and where to watch matches on TV or streaming.",
+    heading: "Matches today",
+    intro: "Browse today's live matches and find which broadcaster is showing each fixture.",
+    landingConfig: {
+      dateWindowDays: 1,
+    },
+  });
+  seoPages.push({
+    url: `${SITE_URL}/matches-today/`,
+    path: "/matches-today/",
+    label: "Matches today",
+  });
+
+  if (footballSport && Number.isFinite(footballSport.id)) {
+    specialPageDefs.push({
+      outDir: path.join(OUT_DIR, "football-on-tv-today"),
+      canonicalPath: "/football-on-tv-today/",
+      title: "Football On TV Today - Where Is Match",
+      description: "Find live football on TV today with kickoff times and broadcaster listings.",
+      heading: "Football on TV today",
+      intro: "See today's football matches and where each game is available to watch.",
+      landingConfig: {
+        sportIds: [footballSport.id],
+        lockFilters: true,
+        dateWindowDays: 1,
+      },
+    });
+    seoPages.push({
+      url: `${SITE_URL}/football-on-tv-today/`,
+      path: "/football-on-tv-today/",
+      label: "Football on TV today",
+    });
+  }
+
   for (const [rawSlug, def] of Object.entries(seo)) {
     const slug = String(rawSlug || "").trim().replace(/^\/+|\/+$/g, "");
     if (!slug) continue;
