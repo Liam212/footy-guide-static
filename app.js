@@ -169,6 +169,7 @@ let arePastMatchesVisible = false;
 const MAX_MATCH_CACHE_ENTRIES = 24;
 const matchResponseCache = new Map();
 const inFlightMatchRequests = new Map();
+let countryNameById = new Map();
 
 const updatePastMatchesVisibility = () => {
   const hidePastMatches = !arePastMatchesVisible;
@@ -510,6 +511,9 @@ const loadFilters = async () => {
   ]);
 
   renderSportPills(sports, landingIds.sportIds);
+  countryNameById = new Map(
+    (countries || []).map(country => [country.id, country.name])
+  );
   countryFilterState.setItems(
     countries,
     false,
@@ -586,7 +590,27 @@ const formatTeams = match => {
   const home = match.home_team?.name?.trim() || "";
   const away = match.away_team?.name?.trim() || "";
   if (!home && !away) {
-    return match.venue?.name?.trim() || "TBD";
+    const venueName = match.venue?.name?.trim() || "";
+    const venueCity =
+      match.venue?.city?.trim() ||
+      match.venue?.locality?.trim() ||
+      match.city?.trim() ||
+      "";
+    const countryId =
+      match.venue?.country_id ||
+      match.country_id ||
+      match.competition?.country_id;
+    const venueCountry =
+      match.country?.name?.trim() ||
+      (Number.isFinite(Number(countryId))
+        ? countryNameById.get(Number(countryId)) || ""
+        : "");
+
+    const locationParts = [venueName, venueCity, venueCountry].filter(Boolean);
+    if (locationParts.length) {
+      return Array.from(new Set(locationParts)).join(", ");
+    }
+    return "TBD";
   }
   return away ? `${home} vs ${away}` : home;
 };
