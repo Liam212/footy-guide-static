@@ -583,8 +583,11 @@ const formatCompactDate = value => {
 };
 
 const formatTeams = match => {
-  const home = match.home_team?.name || "TBD";
-  const away = match.away_team?.name || "";
+  const home = match.home_team?.name?.trim() || "";
+  const away = match.away_team?.name?.trim() || "";
+  if (!home && !away) {
+    return match.venue?.name?.trim() || "TBD";
+  }
   return away ? `${home} vs ${away}` : home;
 };
 
