@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
+# Keep API/proxy endpoints out of search results.
+Disallow: /api/
+Disallow: /proxy
+
 Sitemap: https://whereismatch.com/sitemap.xml

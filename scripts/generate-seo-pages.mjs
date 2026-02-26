@@ -76,7 +76,7 @@ const pageShell = ({
   const canonicalUrl = `${SITE_URL}${canonicalPath}`;
 
   return `<!doctype html>
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -87,6 +87,7 @@ const pageShell = ({
     <meta name="theme-color" content="#38a3a5" />
 
     <meta property="og:site_name" content="Where Is Match" />
+    <meta property="og:locale" content="en_GB" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="${escapeHtml(title)}" />
     <meta property="og:description" content="${escapeHtml(description)}" />

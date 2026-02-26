@@ -32,6 +32,8 @@ const { fetchJson } = apiClient;
 
 const updateSeoMeta = () => {
   const canonicalHref = `${siteUrl}${window.location.pathname}`;
+  const path = window.location.pathname || "/";
+  const isApiLikePath = path === "/proxy" || path.startsWith("/proxy/") || path === "/api" || path.startsWith("/api/");
 
   let canonical = document.querySelector('link[rel="canonical"]');
   if (!canonical) {
@@ -49,7 +51,9 @@ const updateSeoMeta = () => {
   }
   robots.setAttribute(
     "content",
-    window.location.search && window.location.search.length > 0
+    isApiLikePath
+      ? "noindex,nofollow"
+      : window.location.search && window.location.search.length > 0
       ? "noindex,follow"
       : "index,follow"
   );
