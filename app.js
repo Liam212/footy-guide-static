@@ -54,8 +54,8 @@ const updateSeoMeta = () => {
     isApiLikePath
       ? "noindex,nofollow"
       : window.location.search && window.location.search.length > 0
-      ? "noindex,follow"
-      : "index,follow"
+        ? "noindex,follow"
+        : "index,follow"
   );
 };
 
@@ -262,7 +262,7 @@ const fetchMatchesForDate = (date, filters = getSelectedMatchFilterParams()) => 
 
 const prefetchDateMatches = date => {
   if (!date) return;
-  fetchMatchesForDate(date).catch(() => {});
+  fetchMatchesForDate(date).catch(() => { });
 };
 
 const updateTodayButtonVisibility = () => {
@@ -619,27 +619,11 @@ const formatTeams = match => {
   return away ? `${home} vs ${away}` : home;
 };
 
-const SPORT_ICON_RULES = [
-  { file: "american.png", keywords: ["american football", "nfl", "cfl", "gridiron"] },
-  { file: "f1.png", keywords: ["formula 1", "formula one", "f1", "grand prix", "motorsport"] },
-  { file: "darts.png", keywords: ["darts"] },
-  { file: "football.png", keywords: ["football", "soccer"] },
-];
-
-const normalizeText = value => String(value || "").trim().toLowerCase();
-
-const getSportIndicatorPath = match => {
-  const sportName = normalizeText(
-    match.sport?.name || match.sport_name || match.competition?.sport_name
-  );
-  const competitionName = normalizeText(match.competition?.name);
-  const haystack = `${sportName} ${competitionName}`.trim();
-  if (!haystack) return null;
-
-  const icon = SPORT_ICON_RULES.find(rule =>
-    rule.keywords.some(keyword => haystack.includes(keyword))
-  );
-  return icon ? `/${icon.file}` : null;
+const SPORT_ICON_BY_ID = {
+  1: "/football.png",
+  2: "/american.png",
+  3: "/f1.png",
+  4: "/darts.png",
 };
 
 const renderMatches = matches => {
@@ -675,7 +659,7 @@ const renderMatches = matches => {
     const card = document.createElement("article");
     card.className = "match-card";
     const matchDate = match.date || currentDate;
-    const sportId = match.sport?.id || match.sport_id || match.competition?.sport_id;
+    const sportId = match.sport_id
     const matchStatus = getMatchStatus(matchDate, match.time, sportId);
     card.classList.add(`is-${matchStatus}`);
 
@@ -691,7 +675,9 @@ const renderMatches = matches => {
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    const indicatorPath = getSportIndicatorPath(match);
+    const indicatorPath = Number.isFinite(Number(sportId))
+      ? SPORT_ICON_BY_ID[Number(sportId)] || null
+      : null;
     if (indicatorPath) {
       const indicator = document.createElement("img");
       indicator.className = "sport-indicator";
