@@ -546,10 +546,17 @@ button.ghost {
   border-bottom: 1px solid var(--border);
   background: var(--card);
   display: grid;
-  grid-template-columns: 80px minmax(220px, 1.4fr) minmax(180px, 1fr) minmax(220px, 1fr);
+  grid-template-columns: 24px 80px minmax(220px, 1.4fr) minmax(180px, 1fr) minmax(220px, 1fr);
   align-items: center;
   column-gap: 16px;
   font-size: 0.95rem;
+}
+
+.match-sport {
+  width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .match-card.is-finished {
@@ -728,6 +735,7 @@ button.ghost {
   .match-time,
   .match-title,
   .match-meta,
+  .match-sport,
   .channels {
     grid-column: 1 / -1;
     justify-self: start;

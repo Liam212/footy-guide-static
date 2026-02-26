@@ -659,9 +659,23 @@ const renderMatches = matches => {
     const card = document.createElement("article");
     card.className = "match-card";
     const matchDate = match.date || currentDate;
-    const sportId = match.sport_id
+    const sportId = match.sport?.id || match.sport_id || match.competition?.sport_id;
     const matchStatus = getMatchStatus(matchDate, match.time, sportId);
     card.classList.add(`is-${matchStatus}`);
+
+    const sportIndicator = document.createElement("div");
+    sportIndicator.className = "match-sport";
+    const indicatorPath = Number.isFinite(Number(sportId))
+      ? SPORT_ICON_BY_ID[Number(sportId)] || null
+      : null;
+    if (indicatorPath) {
+      const indicator = document.createElement("img");
+      indicator.className = "sport-indicator";
+      indicator.src = indicatorPath;
+      indicator.alt = "";
+      indicator.setAttribute("aria-hidden", "true");
+      sportIndicator.appendChild(indicator);
+    }
 
     const time = document.createElement("div");
     time.className = "match-time";
@@ -675,21 +689,7 @@ const renderMatches = matches => {
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    const indicatorPath = Number.isFinite(Number(sportId))
-      ? SPORT_ICON_BY_ID[Number(sportId)] || null
-      : null;
-    if (indicatorPath) {
-      const indicator = document.createElement("img");
-      indicator.className = "sport-indicator";
-      indicator.src = indicatorPath;
-      indicator.alt = "";
-      indicator.setAttribute("aria-hidden", "true");
-      meta.appendChild(indicator);
-    }
-
-    const metaText = document.createElement("span");
-    metaText.textContent = match.competition?.name || match.sport?.name || "";
-    meta.appendChild(metaText);
+    meta.textContent = match.competition?.name || match.sport?.name || "";
 
     const channels = document.createElement("div");
     channels.className = "channels";
@@ -708,7 +708,7 @@ const renderMatches = matches => {
       channels.appendChild(pill);
     });
 
-    card.append(time, title, meta, channels);
+    card.append(sportIndicator, time, title, meta, channels);
     fragment.appendChild(card);
   });
 
