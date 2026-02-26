@@ -175,6 +175,16 @@ const matchResponseCache = new Map();
 const inFlightMatchRequests = new Map();
 let countryNameById = new Map();
 
+const updateVisibleEventsStatus = () => {
+  const totalCount = matchesEl.querySelectorAll(".match-card").length;
+  const visibleCount = matchesEl.querySelectorAll(".match-card:not(.is-collapsed)").length;
+  if (totalCount === 0) {
+    setStatus("Showing 0 event(s).");
+    return;
+  }
+  setStatus(`Showing ${visibleCount} event(s).`);
+};
+
 const updatePastMatchesVisibility = () => {
   const hidePastMatches = !arePastMatchesVisible;
   const finishedCards = Array.from(
@@ -185,11 +195,13 @@ const updatePastMatchesVisibility = () => {
 
   if (togglePastMatchesButton) {
     togglePastMatchesButton.textContent = arePastMatchesVisible
-      ? `Hide past matches (${pastMatchCount})`
-      : `Show past matches (${pastMatchCount})`;
+      ? `Hide past events (${pastMatchCount})`
+      : `Show past events (${pastMatchCount})`;
     togglePastMatchesButton.setAttribute("aria-pressed", String(arePastMatchesVisible));
     togglePastMatchesButton.disabled = pastMatchCount === 0;
   }
+
+  updateVisibleEventsStatus();
 };
 
 const normalizeFilterIds = ids => [...ids].sort((a, b) => a - b);
@@ -632,7 +644,7 @@ const renderMatches = matches => {
     const empty = document.createElement("div");
     empty.className = "empty-state";
     empty.innerHTML = `
-      <h2>No matches found</h2>
+      <h2>No events found</h2>
       <p>Try broadening your filters, switching date, or jumping to a sport page.</p>
       <div class="empty-actions">
         <button type="button" class="ghost" data-action="reset">Reset filters</button>
@@ -726,10 +738,9 @@ const loadMatches = async () => {
   updateTodayButtonVisibility();
   const filters = getSelectedMatchFilterParams();
 
-  setStatus("Loading matches...");
+  setStatus("Loading events...");
   const matches = await fetchMatchesForDate(date, filters);
   renderMatches(matches);
-  setStatus(`Showing ${matches.length} match(es).`);
   if (dateBannerEl) {
     dateBannerEl.textContent = isDateRangeMode
       ? `Next ${landingDateWindowDays} days`
