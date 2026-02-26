@@ -619,6 +619,29 @@ const formatTeams = match => {
   return away ? `${home} vs ${away}` : home;
 };
 
+const SPORT_ICON_RULES = [
+  { file: "american.png", keywords: ["american football", "nfl", "cfl", "gridiron"] },
+  { file: "f1.png", keywords: ["formula 1", "formula one", "f1", "grand prix", "motorsport"] },
+  { file: "darts.png", keywords: ["darts"] },
+  { file: "football.png", keywords: ["football", "soccer"] },
+];
+
+const normalizeText = value => String(value || "").trim().toLowerCase();
+
+const getSportIndicatorPath = match => {
+  const sportName = normalizeText(
+    match.sport?.name || match.sport_name || match.competition?.sport_name
+  );
+  const competitionName = normalizeText(match.competition?.name);
+  const haystack = `${sportName} ${competitionName}`.trim();
+  if (!haystack) return null;
+
+  const icon = SPORT_ICON_RULES.find(rule =>
+    rule.keywords.some(keyword => haystack.includes(keyword))
+  );
+  return icon ? `/${icon.file}` : null;
+};
+
 const renderMatches = matches => {
   matchesEl.innerHTML = "";
   if (!matches.length) {
@@ -668,7 +691,19 @@ const renderMatches = matches => {
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    meta.textContent = match.competition?.name || "";
+    const indicatorPath = getSportIndicatorPath(match);
+    if (indicatorPath) {
+      const indicator = document.createElement("img");
+      indicator.className = "sport-indicator";
+      indicator.src = indicatorPath;
+      indicator.alt = "";
+      indicator.setAttribute("aria-hidden", "true");
+      meta.appendChild(indicator);
+    }
+
+    const metaText = document.createElement("span");
+    metaText.textContent = match.competition?.name || match.sport?.name || "";
+    meta.appendChild(metaText);
 
     const channels = document.createElement("div");
     channels.className = "channels";

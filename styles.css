@@ -11,6 +11,7 @@
   --accent-2: #57cc99;
   --border: rgba(34, 87, 122, 0.2);
   --shadow: 0 20px 40px rgba(34, 87, 122, 0.12);
+  --sport-indicator-filter: brightness(0) saturate(100%) opacity(0.88);
   font-family: "Manrope", system-ui, -apple-system, sans-serif;
 }
 
@@ -25,6 +26,7 @@
   --accent-2: #7ee6b2;
   --border: rgba(157, 195, 216, 0.3);
   --shadow: 0 20px 40px rgba(5, 10, 16, 0.4);
+  --sport-indicator-filter: brightness(0) saturate(100%) invert(1) opacity(0.88);
 }
 
 * {
@@ -577,7 +579,18 @@ button.ghost {
 }
 
 .match-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--muted);
+}
+
+.sport-indicator {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: var(--sport-indicator-filter);
 }
 
 .channels {
