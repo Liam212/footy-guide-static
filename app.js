@@ -671,14 +671,14 @@ const renderMatches = matches => {
     const card = document.createElement("article");
     card.className = "match-card";
     const matchDate = match.date || currentDate;
-    const sportId = match.sport?.id || match.sport_id || match.competition?.sport_id;
+    const sportId = Number(match.sport_id);
     const matchStatus = getMatchStatus(matchDate, match.time, sportId);
     card.classList.add(`is-${matchStatus}`);
 
     const sportIndicator = document.createElement("div");
     sportIndicator.className = "match-sport";
-    const indicatorPath = Number.isFinite(Number(sportId))
-      ? SPORT_ICON_BY_ID[Number(sportId)] || null
+    const indicatorPath = Number.isFinite(sportId)
+      ? SPORT_ICON_BY_ID[sportId] || null
       : null;
     if (indicatorPath) {
       const indicator = document.createElement("img");
@@ -697,11 +697,18 @@ const renderMatches = matches => {
 
     const title = document.createElement("div");
     title.className = "match-title";
-    title.textContent = formatTeams(match);
+    const defaultTitle = formatTeams(match);
+    const competitionText = match.competition?.name || match.sport?.name || "";
+    const isFormulaOne = sportId === 3;
+    title.textContent = isFormulaOne
+      ? (competitionText || defaultTitle)
+      : defaultTitle;
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    meta.textContent = match.competition?.name || match.sport?.name || "";
+    meta.textContent = isFormulaOne
+      ? (defaultTitle !== competitionText ? defaultTitle : "")
+      : competitionText;
 
     const channels = document.createElement("div");
     channels.className = "channels";
