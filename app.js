@@ -699,14 +699,14 @@ const renderMatches = matches => {
     title.className = "match-title";
     const defaultTitle = formatTeams(match);
     const competitionText = match.competition?.name || match.sport?.name || "";
-    const isFormulaOne = sportId === 3;
-    title.textContent = isFormulaOne
+    const shouldPrioritizeCompetition = sportId === 3 || sportId === 4;
+    title.textContent = shouldPrioritizeCompetition
       ? (competitionText || defaultTitle)
       : defaultTitle;
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    meta.textContent = isFormulaOne
+    meta.textContent = shouldPrioritizeCompetition
       ? (defaultTitle !== competitionText ? defaultTitle : "")
       : competitionText;
 
