@@ -636,6 +636,7 @@ const SPORT_ICON_BY_ID = {
   2: "/american.png",
   3: "/f1.png",
   4: "/darts.png",
+  5: "/snooker.png",
 };
 
 const renderMatches = matches => {
