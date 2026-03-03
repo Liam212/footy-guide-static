@@ -436,9 +436,9 @@ input[type="search"] {
   }
 
   .control-sports .pill-group {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
   }
 }
 
