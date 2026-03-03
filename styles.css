@@ -164,9 +164,9 @@ a {
 .controls {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  padding: 18px;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px;
   border-radius: 18px;
   background: var(--card);
   border: 1px solid var(--border);
@@ -174,12 +174,44 @@ a {
 
 .control {
   display: grid;
-  gap: 8px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .control label {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.control .control-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.control-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.control-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button.mini {
+  padding: 4px 9px;
+  min-height: 26px;
+  font-size: 0.74rem;
+  line-height: 1;
+}
+
+button.mini:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 input[type="search"] {
@@ -190,28 +222,25 @@ input[type="search"] {
   min-height: 32px;
   font-size: 0.9rem;
   flex: 1 1 140px;
+  width: 100%;
   outline: none;
-}
-
-.control.full-row {
-  grid-column: 1 / -1;
 }
 
 .pill-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .pill {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--card);
-  font-size: 0.78rem;
+  font-size: 0.79rem;
   cursor: pointer;
   user-select: none;
 }
@@ -239,6 +268,7 @@ input[type="search"] {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  width: 100%;
   padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid var(--border);
@@ -325,17 +355,99 @@ input[type="search"] {
 }
 
 .advanced {
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--card);
-  grid-column: 1 / -1;
 }
 
 .advanced summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
   font-weight: 600;
   color: var(--accent);
+  list-style: none;
+}
+
+.advanced[open] summary {
+  margin-bottom: 12px;
+}
+
+.advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(56, 163, 165, 0.18);
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 5px;
+}
+
+.advanced-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.advanced .control {
+  margin: 0;
+}
+
+.advanced .control + .control {
+  margin-top: 18px;
+}
+
+@media (min-width: 760px) {
+  .controls {
+    grid-template-columns: minmax(360px, 2fr) minmax(260px, 1.2fr) minmax(260px, 1.2fr);
+    align-items: start;
+  }
+
+  .control-sports {
+    min-width: 0;
+  }
+
+  .control-country {
+    min-width: 0;
+  }
+
+  .advanced {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .advanced-panel {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    gap: 18px;
+  }
+
+  .advanced .control + .control {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .control-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .control-sports .pill-group {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
 }
 
 .buttons {

@@ -67,8 +67,7 @@
           <div class="site-header-main">
             <h1>Where Is Match</h1>
             <p>
-              Find where to watch live sport. Filter by sport, country, competition, and
-              broadcaster.
+              Find where to watch live sport on TV and streaming services. Filter by sport, country, competition, and broadcaster to see today’s live matches and upcoming fixtures instantly.
             </p>
           </div>
           <div class="site-header-actions">
@@ -84,11 +83,17 @@
         </div>
       </header>
       <section class="controls" aria-label="Filters">
-        <div class="control full-row">
-          <label>Sports</label>
+        <div class="control control-sports">
+          <div class="control-header">
+            <span class="control-label">Sports</span>
+            <div class="control-actions" aria-label="Sport quick actions">
+              <button id="select-all-sports" type="button" class="ghost mini">All</button>
+              <button id="clear-sports" type="button" class="ghost mini">None</button>
+            </div>
+          </div>
           <div id="sport-pills" class="pill-group" role="group" aria-label="Sports"></div>
         </div>
-        <div class="control">
+        <div class="control control-country">
           <label for="country-search">Countries</label>
           <div id="country-filter" class="multi-select">
             <div class="multi-select-box">
@@ -98,26 +103,31 @@
             <div id="country-options" class="options" role="listbox" aria-label="Countries"></div>
           </div>
         </div>
-        <div class="control">
-          <label for="competition-search">Competitions</label>
-          <div id="competition-filter" class="multi-select">
-            <div class="multi-select-box">
-              <div id="competition-pills" class="token-pills"></div>
-              <input id="competition-search" type="search" placeholder="Search competitions" />
-            </div>
-            <div id="competition-options" class="options" role="listbox" aria-label="Competitions"></div>
-          </div>
-        </div>
-        <details class="advanced">
-          <summary>Advanced filters</summary>
-          <div class="control">
-            <label for="broadcaster-search">Broadcasters</label>
-            <div id="broadcaster-filter" class="multi-select">
-              <div class="multi-select-box">
-                <div id="broadcaster-pills" class="token-pills"></div>
-                <input id="broadcaster-search" type="search" placeholder="Search broadcasters" />
+        <details class="advanced" id="advanced-filters">
+          <summary>
+            <span>More filters</span>
+            <span id="advanced-count" class="filter-count" hidden>0</span>
+          </summary>
+          <div class="advanced-panel">
+            <div class="control">
+              <label for="broadcaster-search">Broadcasters</label>
+              <div id="broadcaster-filter" class="multi-select">
+                <div class="multi-select-box">
+                  <div id="broadcaster-pills" class="token-pills"></div>
+                  <input id="broadcaster-search" type="search" placeholder="Search broadcasters" />
+                </div>
+                <div id="broadcaster-options" class="options" role="listbox" aria-label="Broadcasters"></div>
               </div>
-              <div id="broadcaster-options" class="options" role="listbox" aria-label="Broadcasters"></div>
+            </div>
+            <div class="control">
+              <label for="competition-search">Competitions</label>
+              <div id="competition-filter" class="multi-select">
+                <div class="multi-select-box">
+                  <div id="competition-pills" class="token-pills"></div>
+                  <input id="competition-search" type="search" placeholder="Search competitions" />
+                </div>
+                <div id="competition-options" class="options" role="listbox" aria-label="Competitions"></div>
+              </div>
             </div>
           </div>
         </details>

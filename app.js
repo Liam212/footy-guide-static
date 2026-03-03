@@ -75,6 +75,11 @@ const broadcasterFilter = document.getElementById("broadcaster-filter");
 const broadcasterSearch = document.getElementById("broadcaster-search");
 const broadcasterPills = document.getElementById("broadcaster-pills");
 const broadcasterOptions = document.getElementById("broadcaster-options");
+const advancedFilters = document.getElementById("advanced-filters");
+const advancedCount = document.getElementById("advanced-count");
+
+const selectAllSportsButton = document.getElementById("select-all-sports");
+const clearSportsButton = document.getElementById("clear-sports");
 
 const statusEl = document.getElementById("status");
 const dateBannerEl = document.getElementById("date-banner");
@@ -289,6 +294,54 @@ const getCheckedSportIds = () =>
     .map(input => Number(input.value))
     .filter(value => Number.isFinite(value));
 
+const saveSportSelection = () => {
+  if (isSeoLandingPage) return;
+  const inputs = Array.from(sportPills.querySelectorAll("input[type=checkbox]"));
+  const selected = inputs
+    .filter(input => input.checked)
+    .map(input => Number(input.value))
+    .filter(value => Number.isFinite(value));
+  if (selected.length === inputs.length) {
+    localStorage.removeItem(STORAGE_KEYS.sports);
+    return;
+  }
+  writeStoredIds(STORAGE_KEYS.sports, selected);
+};
+
+const updateAdvancedFilterCount = () => {
+  if (!advancedCount) return;
+  const totalSelected =
+    competitionFilterState.getSelectedIds().length +
+    broadcasterFilterState.getSelectedIds().length;
+  advancedCount.textContent = String(totalSelected);
+  advancedCount.hidden = totalSelected === 0;
+  if (advancedFilters) {
+    advancedFilters.classList.toggle("has-active", totalSelected > 0);
+  }
+};
+
+const refreshResultsForSportChange = () => {
+  saveSportSelection();
+  loadCompetitions()
+    .then(() => {
+      updateAdvancedFilterCount();
+      return loadMatches();
+    })
+    .catch(error => setStatus(error.message));
+};
+
+const setAllSports = checked => {
+  const inputs = Array.from(sportPills.querySelectorAll("input[type=checkbox]"));
+  inputs.forEach(input => {
+    input.checked = checked;
+    const pill = input.closest(".pill");
+    if (pill) {
+      pill.classList.toggle("is-active", checked);
+    }
+  });
+  refreshResultsForSportChange();
+};
+
 const renderSportPills = (sports, selectedIds) => {
   const hasSelected = Array.isArray(selectedIds) && selectedIds.length > 0;
   const stored = new Set(
@@ -491,7 +544,10 @@ const countryFilterState = createMultiFilter({
   onChange: () => {
     writeStoredIds(STORAGE_KEYS.countries, countryFilterState.getSelectedIds());
     loadCompetitions()
-      .then(() => loadMatches())
+      .then(() => {
+        updateAdvancedFilterCount();
+        return loadMatches();
+      })
       .catch(error => setStatus(error.message));
   },
 });
@@ -503,6 +559,7 @@ const competitionFilterState = createMultiFilter({
   pillsEl: competitionPills,
   onChange: () => {
     writeStoredIds(STORAGE_KEYS.competitions, competitionFilterState.getSelectedIds());
+    updateAdvancedFilterCount();
     loadMatches().catch(error => setStatus(error.message));
   },
 });
@@ -514,6 +571,7 @@ const broadcasterFilterState = createMultiFilter({
   pillsEl: broadcasterPills,
   onChange: () => {
     writeStoredIds(STORAGE_KEYS.broadcasters, broadcasterFilterState.getSelectedIds());
+    updateAdvancedFilterCount();
     loadMatches().catch(error => setStatus(error.message));
   },
 });
@@ -546,6 +604,7 @@ const loadFilters = async () => {
   );
 
   await loadCompetitions();
+  updateAdvancedFilterCount();
   setStatus("");
 };
 
@@ -639,6 +698,14 @@ const SPORT_ICON_BY_ID = {
   5: "/snooker.png",
 };
 
+const SPORT_NAME_BY_ID = {
+  1: "Football",
+  2: "American Football",
+  3: "Formula 1",
+  4: "Darts",
+  5: "Snooker",
+};
+
 const renderMatches = matches => {
   matchesEl.innerHTML = "";
   if (!matches.length) {
@@ -685,8 +752,10 @@ const renderMatches = matches => {
       const indicator = document.createElement("img");
       indicator.className = "sport-indicator";
       indicator.src = indicatorPath;
-      indicator.alt = "";
-      indicator.setAttribute("aria-hidden", "true");
+      const sportName = SPORT_NAME_BY_ID[sportId] || match.sport?.name || "Sport";
+      const iconLabel = `${sportName} icon`;
+      indicator.alt = iconLabel;
+      indicator.setAttribute("aria-label", iconLabel);
       sportIndicator.appendChild(indicator);
     }
 
@@ -798,11 +867,20 @@ sportPills.addEventListener("click", event => {
     input.checked = !input.checked;
     target.classList.toggle("is-active", input.checked);
   }
-  writeStoredIds(STORAGE_KEYS.sports, getCheckedSportIds());
-  loadCompetitions()
-    .then(() => loadMatches())
-    .catch(error => setStatus(error.message));
+  refreshResultsForSportChange();
 });
+
+if (selectAllSportsButton) {
+  selectAllSportsButton.addEventListener("click", () => {
+    setAllSports(true);
+  });
+}
+
+if (clearSportsButton) {
+  clearSportsButton.addEventListener("click", () => {
+    setAllSports(false);
+  });
+}
 
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
