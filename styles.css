@@ -219,10 +219,13 @@ input[type="search"] {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
+  min-height: 30px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--card);
   font-size: 0.79rem;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   user-select: none;
 }
@@ -438,7 +441,14 @@ input[type="search"] {
   .control-sports .pill-group {
     flex-wrap: wrap;
     overflow-x: visible;
+    gap: 8px;
     padding-bottom: 0;
+  }
+
+  .control-sports .pill {
+    padding: 6px 12px;
+    min-height: 34px;
+    font-size: 0.82rem;
   }
 }
 
