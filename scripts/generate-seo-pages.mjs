@@ -196,16 +196,16 @@ const pageShell = ({
       <section id="matches" class="matches" aria-label="Match list"></section>
 
       <footer class="site-footer" aria-label="Site links">
-        <nav class="footer-links">
+        <div class="footer-more-links" aria-label="Browse pages">
+          ${footerLinksHtml || ""}
+        </div>
+        <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
+        <nav class="footer-links" aria-label="Site pages">
           <a href="/">Home</a>
           <a href="/about/">About</a>
           <a href="/faq/">FAQ</a>
           <a href="/privacy/">Privacy</a>
         </nav>
-        <div class="footer-more-links" aria-label="Browse pages">
-          ${footerLinksHtml || ""}
-        </div>
-        <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
       </footer>
     </div>
 

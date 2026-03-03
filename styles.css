@@ -724,9 +724,11 @@ button.ghost {
 }
 
 .footer-links {
+  position: static;
   display: flex;
   flex-wrap: wrap;
   gap: 10px 14px;
+  margin-top: 12px;
 }
 
 .footer-links a {
