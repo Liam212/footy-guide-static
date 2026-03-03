@@ -273,6 +273,48 @@ const buildSitemap = urls => {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
 };
 
+const FOOTER_GROUP_ORDER = [
+  "Featured",
+  "By sport",
+  "Football by country",
+  "By competition",
+  "By broadcaster",
+];
+
+const buildFooterLinksHtml = pages => {
+  const grouped = new Map();
+  for (const page of pages) {
+    const group = page.group || "Featured";
+    if (!grouped.has(group)) grouped.set(group, []);
+    grouped.get(group).push(page);
+  }
+
+  const sortedGroups = Array.from(grouped.entries()).sort((a, b) => {
+    const ai = FOOTER_GROUP_ORDER.indexOf(a[0]);
+    const bi = FOOTER_GROUP_ORDER.indexOf(b[0]);
+    const ar = ai === -1 ? Number.MAX_SAFE_INTEGER : ai;
+    const br = bi === -1 ? Number.MAX_SAFE_INTEGER : bi;
+    if (ar !== br) return ar - br;
+    return a[0].localeCompare(b[0], "en");
+  });
+
+  return sortedGroups
+    .map(([group, groupPages]) => {
+      const links = groupPages
+        .sort((a, b) => a.label.localeCompare(b.label, "en"))
+        .map(page => `<a href="${page.path}">${escapeHtml(page.label)}</a>`)
+        .join("\n                ");
+
+      return `<section class="footer-link-group" aria-label="${escapeHtml(group)} pages">
+              <p class="footer-link-heading">${escapeHtml(group)}</p>
+              <div class="footer-link-items">
+                ${links}
+              </div>
+            </section>`;
+    })
+    .join("\n            ");
+};
+
 const main = async () => {
   const sports = await fetchJson("/sports");
   if (!Array.isArray(sports)) {
@@ -323,6 +365,7 @@ const main = async () => {
       url: `${SITE_URL}${canonicalPath}`,
       path: canonicalPath,
       label: `${sport.name} on TV`,
+      group: "By sport",
     });
   }
 
@@ -397,6 +440,7 @@ const main = async () => {
         url: `${SITE_URL}${canonicalPath}`,
         path: canonicalPath,
         label: `${variant.label} football on TV`,
+        group: "Football by country",
       });
     }
   }
@@ -416,6 +460,7 @@ const main = async () => {
     url: `${SITE_URL}/matches-today/`,
     path: "/matches-today/",
     label: "Matches today",
+    group: "Featured",
   });
 
   if (footballSport && Number.isFinite(footballSport.id)) {
@@ -436,6 +481,7 @@ const main = async () => {
       url: `${SITE_URL}/football-on-tv-today/`,
       path: "/football-on-tv-today/",
       label: "Football on TV today",
+      group: "Featured",
     });
   }
 
@@ -484,13 +530,15 @@ const main = async () => {
       url: `${SITE_URL}${canonicalPath}`,
       path: canonicalPath,
       label: pageLabel,
+      group: Number.isFinite(def?.broadcaster_id)
+        ? "By broadcaster"
+        : Number.isFinite(def?.competition_id)
+          ? "By competition"
+          : "Featured",
     });
   }
 
-  seoPages.sort((a, b) => a.label.localeCompare(b.label, "en"));
-  const footerLinksHtml = seoPages
-    .map(page => `<a href="${page.path}">${escapeHtml(page.label)}</a>`)
-    .join("\n            ");
+  const footerLinksHtml = buildFooterLinksHtml(seoPages);
 
   const staticPagesToInject = [
     path.join(OUT_DIR, "index.html"),

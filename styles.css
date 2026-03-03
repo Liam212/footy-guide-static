@@ -749,22 +749,40 @@ button.ghost {
 
 .footer-more-links {
   margin-top: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  max-height: 220px;
+  display: grid;
+  gap: 12px;
+  max-height: 320px;
   overflow: auto;
   padding: 4px 2px 2px;
 }
 
-.footer-more-links a {
+.footer-link-group {
+  display: grid;
+  gap: 8px;
+}
+
+.footer-link-heading {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.footer-link-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.footer-link-items a {
   color: var(--muted);
   text-decoration: none;
   font-size: 0.88rem;
   border-bottom: 1px solid transparent;
 }
 
-.footer-more-links a:hover {
+.footer-link-items a:hover {
   color: var(--accent);
   border-bottom-color: rgba(56, 163, 165, 0.45);
 }
