@@ -99,7 +99,7 @@ const pageShell = ({
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${SITE_URL}/og.svg" />
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
     <link rel="manifest" href="/site.webmanifest" />
 
