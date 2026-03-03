@@ -337,10 +337,11 @@ input[type="search"] {
 }
 
 .advanced {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 8px 10px;
-  background: var(--card);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  grid-column: 1 / -1;
 }
 
 .advanced summary {
@@ -349,8 +350,16 @@ input[type="search"] {
   gap: 8px;
   cursor: pointer;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--muted);
   list-style: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(56, 163, 165, 0.35);
+  text-underline-offset: 3px;
+}
+
+.advanced summary:hover {
+  color: var(--accent);
+  text-decoration-color: rgba(56, 163, 165, 0.6);
 }
 
 .advanced[open] summary {
@@ -365,15 +374,15 @@ input[type="search"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgba(56, 163, 165, 0.18);
-  color: var(--accent);
-  font-size: 0.72rem;
+  min-width: 0;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.74rem;
   font-weight: 700;
   line-height: 1;
-  padding: 0 5px;
+  padding: 0;
 }
 
 .advanced-panel {
