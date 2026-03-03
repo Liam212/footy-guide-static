@@ -374,15 +374,16 @@ input[type="search"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
-  height: auto;
-  border-radius: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.74rem;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(56, 163, 165, 0.18);
+  color: var(--accent);
+  font-size: 0.68rem;
   font-weight: 700;
   line-height: 1;
-  padding: 0;
+  padding: 0 4px;
+  text-decoration: none;
 }
 
 .advanced-panel {
