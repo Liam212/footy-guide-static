@@ -196,24 +196,6 @@ a {
   margin-bottom: 2px;
 }
 
-.control-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-button.mini {
-  padding: 4px 9px;
-  min-height: 26px;
-  font-size: 0.74rem;
-  line-height: 1;
-}
-
-button.mini:hover {
-  transform: none;
-  box-shadow: none;
-}
-
 input[type="search"] {
   padding: 6px 8px;
   border-radius: 8px;

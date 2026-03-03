@@ -78,9 +78,6 @@ const broadcasterOptions = document.getElementById("broadcaster-options");
 const advancedFilters = document.getElementById("advanced-filters");
 const advancedCount = document.getElementById("advanced-count");
 
-const selectAllSportsButton = document.getElementById("select-all-sports");
-const clearSportsButton = document.getElementById("clear-sports");
-
 const statusEl = document.getElementById("status");
 const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
@@ -330,17 +327,6 @@ const refreshResultsForSportChange = () => {
     .catch(error => setStatus(error.message));
 };
 
-const setAllSports = checked => {
-  const inputs = Array.from(sportPills.querySelectorAll("input[type=checkbox]"));
-  inputs.forEach(input => {
-    input.checked = checked;
-    const pill = input.closest(".pill");
-    if (pill) {
-      pill.classList.toggle("is-active", checked);
-    }
-  });
-  refreshResultsForSportChange();
-};
 
 const renderSportPills = (sports, selectedIds) => {
   const hasSelected = Array.isArray(selectedIds) && selectedIds.length > 0;
@@ -869,18 +855,6 @@ sportPills.addEventListener("click", event => {
   }
   refreshResultsForSportChange();
 });
-
-if (selectAllSportsButton) {
-  selectAllSportsButton.addEventListener("click", () => {
-    setAllSports(true);
-  });
-}
-
-if (clearSportsButton) {
-  clearSportsButton.addEventListener("click", () => {
-    setAllSports(false);
-  });
-}
 
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
