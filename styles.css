@@ -763,8 +763,8 @@ button.ghost {
 
 .footer-link-heading {
   margin: 0;
-  font-size: 0.72rem;
-  color: var(--muted);
+  font-size: 0.82rem;
+  color: var(--accent);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
