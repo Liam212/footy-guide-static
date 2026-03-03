@@ -86,6 +86,7 @@ const nextDayButton = document.getElementById("next-day");
 const togglePastMatchesButton = document.getElementById("toggle-past-matches");
 const matchesEl = document.getElementById("matches");
 const themeToggleButton = document.getElementById("theme-toggle");
+const footerMoreLinks = document.querySelector(".footer-more-links");
 
 const setStatus = message => {
   statusEl.textContent = message || "";
@@ -147,6 +148,34 @@ const initTheme = () => {
       applyTheme(nextTheme);
     });
   }
+};
+
+const initFooterLinkTracking = () => {
+  if (!footerMoreLinks) return;
+
+  footerMoreLinks.addEventListener("click", event => {
+    const link = event.target.closest("a");
+    if (!link || !footerMoreLinks.contains(link)) return;
+    if (!window.posthog || typeof window.posthog.capture !== "function") return;
+
+    const href = link.getAttribute("href") || "";
+    const destination = href
+      ? new URL(href, window.location.origin)
+      : null;
+    const groupEl = link.closest("[data-footer-group]");
+    const headingEl = groupEl ? groupEl.querySelector(".footer-link-heading") : null;
+    const rawPosition = Number(link.getAttribute("data-footer-position"));
+
+    window.posthog.capture("footer_seo_link_clicked", {
+      link_path: destination
+        ? `${destination.pathname}${destination.search}${destination.hash}`
+        : href,
+      link_label: (link.textContent || "").trim(),
+      group: groupEl?.getAttribute("data-footer-group") || headingEl?.textContent?.trim() || "ungrouped",
+      position: Number.isFinite(rawPosition) ? rawPosition : null,
+      from_path: `${window.location.pathname}${window.location.search}`,
+    });
+  });
 };
 
 const readStoredIds = key => {
@@ -816,6 +845,7 @@ const handleInit = async () => {
   updateSeoMeta();
   initLandingUi();
   initTheme();
+  initFooterLinkTracking();
   const urlDate = readDateFromUrl();
   currentDate = urlDate || todayIso();
   if (urlDate) {

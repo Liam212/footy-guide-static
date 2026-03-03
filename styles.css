@@ -763,23 +763,31 @@ button.ghost {
 
 .footer-link-heading {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: var(--muted);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
 
 .footer-link-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
 }
 
 .footer-link-items a {
+  display: inline-block;
   color: var(--muted);
   text-decoration: none;
   font-size: 0.88rem;
   border-bottom: 1px solid transparent;
+}
+
+@media (min-width: 760px) {
+  .footer-link-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 14px;
+  }
 }
 
 .footer-link-items a:hover {

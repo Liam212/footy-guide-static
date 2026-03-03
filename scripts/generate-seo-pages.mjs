@@ -275,10 +275,10 @@ const buildSitemap = urls => {
 
 const FOOTER_GROUP_ORDER = [
   "Featured",
-  "By sport",
-  "Football by country",
-  "By competition",
-  "By broadcaster",
+  "Sports",
+  "Football",
+  "Competitions",
+  "Broadcasters",
 ];
 
 const buildFooterLinksHtml = pages => {
@@ -302,10 +302,13 @@ const buildFooterLinksHtml = pages => {
     .map(([group, groupPages]) => {
       const links = groupPages
         .sort((a, b) => a.label.localeCompare(b.label, "en"))
-        .map(page => `<a href="${page.path}">${escapeHtml(page.label)}</a>`)
+        .map(
+          (page, index) =>
+            `<a href="${page.path}" data-footer-link="1" data-footer-position="${index + 1}">${escapeHtml(page.label)}</a>`
+        )
         .join("\n                ");
 
-      return `<section class="footer-link-group" aria-label="${escapeHtml(group)} pages">
+      return `<section class="footer-link-group" data-footer-group="${escapeHtml(group)}" aria-label="${escapeHtml(group)} pages">
               <p class="footer-link-heading">${escapeHtml(group)}</p>
               <div class="footer-link-items">
                 ${links}
@@ -365,7 +368,7 @@ const main = async () => {
       url: `${SITE_URL}${canonicalPath}`,
       path: canonicalPath,
       label: `${sport.name} on TV`,
-      group: "By sport",
+      group: "Sports",
     });
   }
 
@@ -440,7 +443,7 @@ const main = async () => {
         url: `${SITE_URL}${canonicalPath}`,
         path: canonicalPath,
         label: `${variant.label} football on TV`,
-        group: "Football by country",
+        group: "Football",
       });
     }
   }
@@ -531,9 +534,9 @@ const main = async () => {
       path: canonicalPath,
       label: pageLabel,
       group: Number.isFinite(def?.broadcaster_id)
-        ? "By broadcaster"
+        ? "Broadcasters"
         : Number.isFinite(def?.competition_id)
-          ? "By competition"
+          ? "Competitions"
           : "Featured",
     });
   }
