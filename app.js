@@ -644,7 +644,7 @@ const SPORT_MATCH_DURATION_MINUTES = {
   1: 120,
   2: 210,
   3: 120,
-  4: 30,
+  4: 240,
 };
 
 const getMatchStatus = (date, time, sportId) => {
