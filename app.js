@@ -7,9 +7,21 @@ import {
 } from "./date-utils.js";
 import { buildParams, createApiClient } from "./api-client.js";
 
+const readConfigValue = value => {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return /^\$\{[A-Z0-9_]+\}$/.test(trimmed) ? "" : trimmed;
+};
+
 const config = window.FOOTY_CONFIG || {};
-const apiUrl = (config.apiUrl || "/proxy").trim();
-const siteUrl = String(config.siteUrl || "https://whereismatch.com").trim().replace(/\/$/, "");
+const apiUrl = readConfigValue(import.meta.env?.VITE_API_URL) ||
+  readConfigValue(config.apiUrl) ||
+  "/proxy";
+const siteUrl = (
+  readConfigValue(import.meta.env?.VITE_SITE_URL) ||
+  readConfigValue(config.siteUrl) ||
+  "https://whereismatch.com"
+).replace(/\/$/, "");
 const landingConfig = window.FOOTY_LANDING && typeof window.FOOTY_LANDING === "object"
   ? window.FOOTY_LANDING
   : null;
@@ -640,11 +652,31 @@ const loadCompetitions = async () => {
 };
 
 const DEFAULT_MATCH_DURATION_MINUTES = 120;
-const SPORT_MATCH_DURATION_MINUTES = {
-  1: 120,
-  2: 210,
-  3: 120,
-  4: 240,
+const SPORT_CONFIG_BY_ID = {
+  1: {
+    name: "Football",
+    icon: "/football.png",
+    matchDurationMinutes: 120,
+  },
+  2: {
+    name: "American Football",
+    icon: "/american.png",
+    matchDurationMinutes: 210,
+  },
+  3: {
+    name: "Formula 1",
+    icon: "/f1.png",
+    matchDurationMinutes: 120,
+  },
+  4: {
+    name: "Darts",
+    icon: "/darts.png",
+    matchDurationMinutes: 240,
+  },
+  5: {
+    name: "Snooker",
+    icon: "/snooker.png",
+  },
 };
 
 const getMatchStatus = (date, time, sportId) => {
@@ -653,7 +685,7 @@ const getMatchStatus = (date, time, sportId) => {
   if (Number.isNaN(matchDateTime.getTime())) return "upcoming";
 
   const durationMinutes =
-    (sportId ? SPORT_MATCH_DURATION_MINUTES[sportId] : undefined) ||
+    (sportId ? SPORT_CONFIG_BY_ID[sportId]?.matchDurationMinutes : undefined) ||
     DEFAULT_MATCH_DURATION_MINUTES;
   const matchEndTime = new Date(matchDateTime.getTime() + durationMinutes * 60 * 1000);
   const now = new Date();
@@ -707,20 +739,21 @@ const formatTeams = match => {
   return away ? `${home} vs ${away}` : home;
 };
 
-const SPORT_ICON_BY_ID = {
-  1: "/football.png",
-  2: "/american.png",
-  3: "/f1.png",
-  4: "/darts.png",
-  5: "/snooker.png",
+const updateDateBanner = date => {
+  if (!dateBannerEl) return;
+  dateBannerEl.textContent = isDateRangeMode
+    ? `Next ${landingDateWindowDays} days`
+    : `${formatBannerDate(date)}`;
 };
 
-const SPORT_NAME_BY_ID = {
-  1: "Football",
-  2: "American Football",
-  3: "Formula 1",
-  4: "Darts",
-  5: "Snooker",
+const registerDatePrefetch = (button, direction) => {
+  if (!button) return;
+  const prefetch = () => {
+    prefetchDateMatches(getShiftedDate(currentDate, direction));
+  };
+  button.addEventListener("mouseenter", prefetch);
+  button.addEventListener("focus", prefetch);
+  button.addEventListener("touchstart", prefetch, { passive: true });
 };
 
 const renderMatches = matches => {
@@ -762,14 +795,15 @@ const renderMatches = matches => {
 
     const sportIndicator = document.createElement("div");
     sportIndicator.className = "match-sport";
-    const indicatorPath = Number.isFinite(sportId)
-      ? SPORT_ICON_BY_ID[sportId] || null
+    const sportConfig = Number.isFinite(sportId)
+      ? SPORT_CONFIG_BY_ID[sportId] || null
       : null;
+    const indicatorPath = sportConfig?.icon || null;
     if (indicatorPath) {
       const indicator = document.createElement("img");
       indicator.className = "sport-indicator";
       indicator.src = indicatorPath;
-      const sportName = SPORT_NAME_BY_ID[sportId] || match.sport?.name || "Sport";
+      const sportName = sportConfig?.name || match.sport?.name || "Sport";
       const iconLabel = `${sportName} icon`;
       indicator.alt = iconLabel;
       indicator.setAttribute("aria-label", iconLabel);
@@ -833,11 +867,7 @@ const loadMatches = async () => {
   setStatus("Loading events...");
   const matches = await fetchMatchesForDate(date, filters);
   renderMatches(matches);
-  if (dateBannerEl) {
-    dateBannerEl.textContent = isDateRangeMode
-      ? `Next ${landingDateWindowDays} days`
-      : `${formatBannerDate(date)}`;
-  }
+  updateDateBanner(date);
   updateTodayButtonVisibility();
 };
 
@@ -852,11 +882,7 @@ const handleInit = async () => {
     writeDateToUrl(currentDate);
     updateSeoMeta();
   }
-  if (dateBannerEl) {
-    dateBannerEl.textContent = isDateRangeMode
-      ? `Next ${landingDateWindowDays} days`
-      : `${formatBannerDate(currentDate)}`;
-  }
+  updateDateBanner(currentDate);
   updateTodayButtonVisibility();
 
   try {
@@ -889,24 +915,8 @@ sportPills.addEventListener("click", event => {
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
   nextDayButton.addEventListener("click", () => shiftDay(1));
-  prevDayButton.addEventListener("mouseenter", () => {
-    prefetchDateMatches(getShiftedDate(currentDate, -1));
-  });
-  nextDayButton.addEventListener("mouseenter", () => {
-    prefetchDateMatches(getShiftedDate(currentDate, 1));
-  });
-  prevDayButton.addEventListener("focus", () => {
-    prefetchDateMatches(getShiftedDate(currentDate, -1));
-  });
-  nextDayButton.addEventListener("focus", () => {
-    prefetchDateMatches(getShiftedDate(currentDate, 1));
-  });
-  prevDayButton.addEventListener("touchstart", () => {
-    prefetchDateMatches(getShiftedDate(currentDate, -1));
-  }, { passive: true });
-  nextDayButton.addEventListener("touchstart", () => {
-    prefetchDateMatches(getShiftedDate(currentDate, 1));
-  }, { passive: true });
+  registerDatePrefetch(prevDayButton, -1);
+  registerDatePrefetch(nextDayButton, 1);
 }
 
 if (todayDayButton) {
