@@ -202,7 +202,7 @@ input[type="search"] {
   border: 1px solid transparent;
   background: transparent;
   min-height: 32px;
-  font-size: 0.9rem;
+  font-size: 16px;
   flex: 1 1 140px;
   width: 100%;
   outline: none;
