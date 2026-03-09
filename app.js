@@ -676,31 +676,33 @@ const formatCompactDate = value => {
   });
 };
 
+const formatLocation = match => {
+  const venueName = match.venue?.name?.trim() || "";
+  const venueCity =
+    match.venue?.city?.trim() ||
+    match.venue?.locality?.trim() ||
+    match.city?.trim() ||
+    "";
+  const countryId =
+    match.venue?.country_id ||
+    match.country_id ||
+    match.competition?.country_id;
+  const venueCountry =
+    match.country?.name?.trim() ||
+    (Number.isFinite(Number(countryId))
+      ? countryNameById.get(Number(countryId)) || ""
+      : "");
+
+  const locationParts = [venueName, venueCity, venueCountry].filter(Boolean);
+  if (!locationParts.length) return "";
+  return Array.from(new Set(locationParts)).join(", ");
+};
+
 const formatTeams = match => {
   const home = match.home_team?.name?.trim() || "";
   const away = match.away_team?.name?.trim() || "";
   if (!home && !away) {
-    const venueName = match.venue?.name?.trim() || "";
-    const venueCity =
-      match.venue?.city?.trim() ||
-      match.venue?.locality?.trim() ||
-      match.city?.trim() ||
-      "";
-    const countryId =
-      match.venue?.country_id ||
-      match.country_id ||
-      match.competition?.country_id;
-    const venueCountry =
-      match.country?.name?.trim() ||
-      (Number.isFinite(Number(countryId))
-        ? countryNameById.get(Number(countryId)) || ""
-        : "");
-
-    const locationParts = [venueName, venueCity, venueCountry].filter(Boolean);
-    if (locationParts.length) {
-      return Array.from(new Set(locationParts)).join(", ");
-    }
-    return "TBD";
+    return formatLocation(match) || "TBD";
   }
   return away ? `${home} vs ${away}` : home;
 };
@@ -782,18 +784,16 @@ const renderMatches = matches => {
 
     const title = document.createElement("div");
     title.className = "match-title";
-    const defaultTitle = formatTeams(match);
+    const teamsText = formatTeams(match);
+    const locationText = formatLocation(match);
     const competitionText = match.competition?.name || match.sport?.name || "";
-    const shouldPrioritizeCompetition = sportId === 3 || sportId === 4;
-    title.textContent = shouldPrioritizeCompetition
-      ? (competitionText || defaultTitle)
-      : defaultTitle;
+    title.textContent = competitionText || teamsText;
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    meta.textContent = shouldPrioritizeCompetition
-      ? (defaultTitle !== competitionText ? defaultTitle : "")
-      : competitionText;
+    meta.textContent =
+      locationText ||
+      (teamsText !== competitionText ? teamsText : "");
 
     const channels = document.createElement("div");
     channels.className = "channels";
