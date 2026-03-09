@@ -55,6 +55,50 @@ http://localhost:5173/
 
 Vite provides hot reloading for JavaScript and CSS. HTML page edits trigger a full page reload.
 
+## Local SEO page generation
+
+You can generate the SEO landing pages locally before starting the dev server.
+
+### Generate pages
+
+```bash
+VITE_API_URL=https://api.example.com npm run seo:generate
+```
+
+Or, if you prefer to use the local Vite proxy target:
+
+```bash
+VITE_API_PROXY_TARGET=https://api.example.com npm run seo:generate
+```
+
+This script writes generated landing pages into the working tree and updates `sitemap.xml`.
+
+### Clean generated SEO pages
+
+```bash
+npm run seo:clean
+```
+
+This restores files touched by the last SEO generation run and removes pages that were created by that run.
+
+Run the clean script before generating again if you want to return the working tree to its pre-generation state.
+
+### Generate then start Vite
+
+```bash
+VITE_API_URL=https://api.example.com npm run dev:seo
+```
+
+This command runs the SEO cleanup step first, then regenerates the pages, then starts Vite.
+
+The generator accepts these env vars, in this order:
+
+1. `API_URL`
+2. `VITE_API_URL`
+3. `VITE_API_PROXY_TARGET`
+
+Use `API_URL` if you want to keep the SEO generator completely separate from your Vite config.
+
 ## Production build with Vite
 
 To generate a static build locally:

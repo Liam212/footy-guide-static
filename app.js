@@ -733,9 +733,7 @@ const formatLocation = match => {
 const formatTeams = match => {
   const home = match.home_team?.name?.trim() || "";
   const away = match.away_team?.name?.trim() || "";
-  if (!home && !away) {
-    return formatLocation(match) || "TBD";
-  }
+  if (!home && !away) return "";
   return away ? `${home} vs ${away}` : home;
 };
 
@@ -819,15 +817,18 @@ const renderMatches = matches => {
     const title = document.createElement("div");
     title.className = "match-title";
     const teamsText = formatTeams(match);
+    const hasHomeAndAwayTeams = Boolean(match.home_team?.name?.trim() && match.away_team?.name?.trim());
     const locationText = formatLocation(match);
     const competitionText = match.competition?.name || match.sport?.name || "";
-    title.textContent = competitionText || teamsText;
+    title.textContent = hasHomeAndAwayTeams
+      ? teamsText
+      : competitionText || teamsText || locationText || "TBD";
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
-    meta.textContent =
-      locationText ||
-      (teamsText !== competitionText ? teamsText : "");
+    meta.textContent = hasHomeAndAwayTeams
+      ? competitionText || locationText
+      : locationText || teamsText;
 
     const channels = document.createElement("div");
     channels.className = "channels";

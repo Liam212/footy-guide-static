@@ -4,8 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:seo": "npm run seo:clean && npm run seo:generate && vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seo:clean": "node scripts/clean-seo-pages.mjs",
+    "seo:generate": "node scripts/generate-seo-pages.mjs"
   },
   "devDependencies": {
     "vite": "^7.1.5"

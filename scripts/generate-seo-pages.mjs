@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const SITE_URL = "https://whereismatch.com";
@@ -7,12 +7,36 @@ const ENVIROMENT_PLACEHOLDER = "${ENVIROMENT}";
 const POSTHOG_KEY_PLACEHOLDER = "${POSTHOG_KEY}";
 const POSTHOG_HOST_PLACEHOLDER = "${POSTHOG_HOST}";
 const OUT_DIR = process.env.OUT_DIR || process.cwd();
-const RAW_API_URL = process.env.API_URL || "";
+const MANIFEST_PATH = path.join(OUT_DIR, ".seo-manifest.json");
+const BACKUP_DIR = path.join(OUT_DIR, ".seo-backups");
+const RAW_API_URL =
+  process.env.API_URL ||
+  process.env.VITE_API_URL ||
+  process.env.VITE_API_PROXY_TARGET ||
+  "";
 
 const apiUrl = RAW_API_URL.trim().replace(/\/$/, "");
 if (!apiUrl) {
-  throw new Error("Missing API_URL. Provide API_URL as an env var during generation.");
+  throw new Error(
+    "Missing API_URL. Provide API_URL, VITE_API_URL, or VITE_API_PROXY_TARGET as an env var during generation."
+  );
 }
+
+const manifest = {
+  backupDir: BACKUP_DIR,
+  backups: [],
+  generatedFiles: [],
+};
+const trackedPaths = new Set();
+
+const exists = async filePath => {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const slugify = value =>
   String(value || "")
@@ -245,12 +269,32 @@ const ensureDir = async dir => {
   await mkdir(dir, { recursive: true });
 };
 
+const trackFileWrite = async filePath => {
+  if (trackedPaths.has(filePath)) return;
+  trackedPaths.add(filePath);
+
+  if (await exists(filePath)) {
+    const relativePath = path.relative(OUT_DIR, filePath);
+    const backupPath = path.join(BACKUP_DIR, relativePath);
+    await ensureDir(path.dirname(backupPath));
+    await writeFile(backupPath, await readFile(filePath, "utf8"), "utf8");
+    manifest.backups.push({
+      originalPath: filePath,
+      backupPath,
+    });
+    return;
+  }
+
+  manifest.generatedFiles.push(filePath);
+};
+
 const writeUtf8 = async (filePath, contents) => {
+  await trackFileWrite(filePath);
+  await ensureDir(path.dirname(filePath));
   await writeFile(filePath, contents, "utf8");
 };
 
 const injectSeoPages = async ({ filePath, linksHtml }) => {
-  const placeholder = "<!-- SEO_PAGES -->";
   let contents;
   try {
     contents = await readFile(filePath, "utf8");
@@ -258,11 +302,15 @@ const injectSeoPages = async ({ filePath, linksHtml }) => {
     return;
   }
 
-  if (!contents.includes(placeholder)) {
+  const next = contents.replace(
+    /(<div class="footer-more-links"[^>]*>\s*)(?:<!-- SEO_PAGES -->|[\s\S]*?)(\s*<\/div>)/,
+    `$1${linksHtml}$2`
+  );
+
+  if (next === contents) {
     return;
   }
 
-  const next = contents.replace(placeholder, linksHtml);
   await writeUtf8(filePath, next);
 };
 
@@ -319,6 +367,12 @@ const buildFooterLinksHtml = pages => {
 };
 
 const main = async () => {
+  if (await exists(MANIFEST_PATH)) {
+    throw new Error(
+      `Existing SEO manifest found at ${MANIFEST_PATH}. Run the SEO cleanup script before generating again.`
+    );
+  }
+
   const sports = await fetchJson("/sports");
   if (!Array.isArray(sports)) {
     throw new Error("Unexpected /sports response (expected array).");
@@ -577,6 +631,7 @@ const main = async () => {
 
   const sitemap = buildSitemap(Array.from(sitemapUrls));
   await writeUtf8(path.join(OUT_DIR, "sitemap.xml"), sitemap);
+  await writeUtf8(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`);
 };
 
 await main();
