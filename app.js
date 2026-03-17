@@ -327,14 +327,28 @@ const updateTodayButtonVisibility = () => {
   todayDayButton.setAttribute("aria-hidden", String(shouldHide));
 };
 
+const getSportInputs = () =>
+  Array.from(sportPills.querySelectorAll("input[type=checkbox]"));
+
 const getCheckedSportIds = () =>
-  Array.from(sportPills.querySelectorAll("input[type=checkbox]:checked"))
+  getSportInputs()
+    .filter(input => input.checked)
     .map(input => Number(input.value))
     .filter(value => Number.isFinite(value));
 
+const syncSportPillState = () => {
+  const inputs = getSportInputs();
+  const areAllSportsSelected = inputs.length > 0 && inputs.every(input => input.checked);
+  inputs.forEach(input => {
+    const pill = input.closest(".pill");
+    if (!pill) return;
+    pill.classList.toggle("is-active", input.checked && (isSeoLandingPage || !areAllSportsSelected));
+  });
+};
+
 const saveSportSelection = () => {
   if (isSeoLandingPage) return;
-  const inputs = Array.from(sportPills.querySelectorAll("input[type=checkbox]"));
+  const inputs = getSportInputs();
   const selected = inputs
     .filter(input => input.checked)
     .map(input => Number(input.value))
@@ -389,9 +403,6 @@ const renderSportPills = (sports, selectedIds) => {
     input.type = "checkbox";
     input.value = String(sport.id);
     input.checked = stored.size === 0 ? true : stored.has(sport.id);
-    if (input.checked) {
-      label.classList.add("is-active");
-    }
 
     const text = document.createElement("span");
     text.textContent = sport.name;
@@ -400,6 +411,7 @@ const renderSportPills = (sports, selectedIds) => {
     fragment.appendChild(label);
   });
   sportPills.appendChild(fragment);
+  syncSportPillState();
 };
 
 const createMultiFilter = ({
@@ -905,11 +917,27 @@ const shiftDay = direction => {
 sportPills.addEventListener("click", event => {
   const target = event.target.closest(".pill");
   if (!target) return;
+  event.preventDefault();
+  const inputs = getSportInputs();
   const input = target.querySelector("input");
-  if (input) {
+  if (!input) return;
+
+  const selectedCount = inputs.filter(item => item.checked).length;
+  const areAllSportsSelected = inputs.length > 0 && selectedCount === inputs.length;
+
+  if (!isSeoLandingPage && areAllSportsSelected) {
+    inputs.forEach(item => {
+      item.checked = item === input;
+    });
+  } else if (input.checked && selectedCount === 1) {
+    inputs.forEach(item => {
+      item.checked = true;
+    });
+  } else {
     input.checked = !input.checked;
-    target.classList.toggle("is-active", input.checked);
   }
+
+  syncSportPillState();
   refreshResultsForSportChange();
 });
 
