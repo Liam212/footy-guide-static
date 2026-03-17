@@ -3,7 +3,9 @@ import {
   formatBannerDate,
   getShiftedDate,
   readDateFromUrl,
+  readViewFromUrl,
   writeDateToUrl,
+  writeViewToUrl,
 } from "./date-utils.js";
 import { buildParams, createApiClient } from "./api-client.js";
 
@@ -36,7 +38,11 @@ const isLandingLocked = Boolean(landingConfig?.lockFilters);
 const landingDateWindowDays = Number.isFinite(Number(landingConfig?.dateWindowDays))
   ? Math.max(1, Math.floor(Number(landingConfig.dateWindowDays)))
   : 1;
-const isDateRangeMode = landingDateWindowDays > 1;
+const hasFixedDateWindow = landingDateWindowDays > 1;
+const DAY_VIEW = "day";
+const WEEK_VIEW = "week";
+const WEEK_VIEW_DAYS = 7;
+const WEEK_VIEW_SPORT_IDS = new Set([3, 4, 5]);
 const apiClient = createApiClient({
   apiUrl,
 });
@@ -95,6 +101,9 @@ const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
 const todayDayButton = document.getElementById("today-day");
 const nextDayButton = document.getElementById("next-day");
+const dateViewToggle = document.getElementById("date-view-toggle");
+const dayViewButton = document.getElementById("view-day");
+const weekViewButton = document.getElementById("view-week");
 const togglePastMatchesButton = document.getElementById("toggle-past-matches");
 const matchesEl = document.getElementById("matches");
 const themeToggleButton = document.getElementById("theme-toggle");
@@ -212,6 +221,7 @@ const writeStoredIds = (key, values) => {
 };
 
 let currentDate = todayIso();
+let currentView = hasFixedDateWindow ? DAY_VIEW : (readViewFromUrl() || DAY_VIEW);
 let arePastMatchesVisible = false;
 const MAX_MATCH_CACHE_ENTRIES = 24;
 const matchResponseCache = new Map();
@@ -249,6 +259,62 @@ const updatePastMatchesVisibility = () => {
 
 const normalizeFilterIds = ids => [...ids].sort((a, b) => a - b);
 
+const getCurrentDateWindowDays = () => {
+  if (hasFixedDateWindow) return landingDateWindowDays;
+  return currentView === WEEK_VIEW ? WEEK_VIEW_DAYS : 1;
+};
+
+const isDateRangeMode = () => getCurrentDateWindowDays() > 1;
+
+const getRangeEndDate = date => getShiftedDate(date, getCurrentDateWindowDays() - 1);
+
+const canUseWeekViewForSportIds = sportIds =>
+  !hasFixedDateWindow &&
+  sportIds.length === 1 &&
+  WEEK_VIEW_SPORT_IDS.has(sportIds[0]);
+
+const syncDateViewControls = sportIds => {
+  if (!dateViewToggle || !dayViewButton || !weekViewButton) return;
+  const canUseWeekView = canUseWeekViewForSportIds(sportIds);
+  dateViewToggle.hidden = !canUseWeekView;
+  dayViewButton.classList.toggle("is-active", currentView === DAY_VIEW);
+  weekViewButton.classList.toggle("is-active", currentView === WEEK_VIEW);
+  dayViewButton.setAttribute("aria-pressed", String(currentView === DAY_VIEW));
+  weekViewButton.setAttribute("aria-pressed", String(currentView === WEEK_VIEW));
+  weekViewButton.disabled = !canUseWeekView;
+};
+
+const updateDateViewAvailability = () => {
+  if (!getSportInputs().length) {
+    syncDateViewControls([]);
+    return;
+  }
+  const sportIds = normalizeFilterIds(getCheckedSportIds());
+  const canUseWeekView = canUseWeekViewForSportIds(sportIds);
+  if (!canUseWeekView && currentView === WEEK_VIEW) {
+    currentView = DAY_VIEW;
+    writeViewToUrl(null);
+  }
+  syncDateViewControls(sportIds);
+};
+
+const getDateShiftAmount = () => (currentView === WEEK_VIEW && !hasFixedDateWindow ? WEEK_VIEW_DAYS : 1);
+
+const updateDateNavigationLabels = () => {
+  if (prevDayButton) {
+    prevDayButton.setAttribute(
+      "aria-label",
+      currentView === WEEK_VIEW && !hasFixedDateWindow ? "Previous week" : "Previous day"
+    );
+  }
+  if (nextDayButton) {
+    nextDayButton.setAttribute(
+      "aria-label",
+      currentView === WEEK_VIEW && !hasFixedDateWindow ? "Next week" : "Next day"
+    );
+  }
+};
+
 const getSelectedMatchFilterParams = () => {
   const sportIds = normalizeFilterIds(getCheckedSportIds());
   const countryIds = normalizeFilterIds(countryFilterState.getSelectedIds());
@@ -258,9 +324,7 @@ const getSelectedMatchFilterParams = () => {
 };
 
 const buildMatchParams = (date, filters = getSelectedMatchFilterParams()) => {
-  const endDate = isDateRangeMode
-    ? getShiftedDate(date, landingDateWindowDays - 1)
-    : date;
+  const endDate = getRangeEndDate(date);
   const params = {
     start_date: date,
     end_date: endDate,
@@ -274,7 +338,8 @@ const buildMatchParams = (date, filters = getSelectedMatchFilterParams()) => {
 
 const getMatchRequestKey = (date, filters) =>
   buildParams({
-    date,
+    start_date: date,
+    end_date: getRangeEndDate(date),
     sport_ids: filters.sportIds,
     country_ids: filters.countryIds,
     competition_ids: filters.competitionIds,
@@ -322,7 +387,7 @@ const prefetchDateMatches = date => {
 
 const updateTodayButtonVisibility = () => {
   if (!todayDayButton) return;
-  const shouldHide = isDateRangeMode || (currentDate || todayIso()) === todayIso();
+  const shouldHide = hasFixedDateWindow || (currentDate || todayIso()) === todayIso();
   todayDayButton.classList.toggle("is-reserved-hidden", shouldHide);
   todayDayButton.setAttribute("aria-hidden", String(shouldHide));
 };
@@ -374,6 +439,8 @@ const updateAdvancedFilterCount = () => {
 
 const refreshResultsForSportChange = () => {
   saveSportSelection();
+  updateDateViewAvailability();
+  updateDateNavigationLabels();
   loadCompetitions()
     .then(() => {
       updateAdvancedFilterCount();
@@ -710,11 +777,11 @@ const getMatchStatus = (date, time, sportId) => {
   return "upcoming";
 };
 
-const formatCompactDate = value => {
+const formatGroupedDate = value => {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString(undefined, {
-    weekday: "short",
+    weekday: "long",
     month: "short",
     day: "numeric",
   });
@@ -751,117 +818,169 @@ const formatTeams = match => {
 
 const updateDateBanner = date => {
   if (!dateBannerEl) return;
-  dateBannerEl.textContent = isDateRangeMode
-    ? `Next ${landingDateWindowDays} days`
+  const windowDays = getCurrentDateWindowDays();
+  if (currentView === WEEK_VIEW && !hasFixedDateWindow) {
+    dateBannerEl.textContent = `Next ${WEEK_VIEW_DAYS} days from ${formatBannerDate(date)}`;
+    return;
+  }
+  dateBannerEl.textContent = windowDays > 1
+    ? `Next ${windowDays} days`
     : `${formatBannerDate(date)}`;
 };
 
 const registerDatePrefetch = (button, direction) => {
   if (!button) return;
   const prefetch = () => {
-    prefetchDateMatches(getShiftedDate(currentDate, direction));
+    prefetchDateMatches(getShiftedDate(currentDate, direction * getDateShiftAmount()));
   };
   button.addEventListener("mouseenter", prefetch);
   button.addEventListener("focus", prefetch);
   button.addEventListener("touchstart", prefetch, { passive: true });
 };
 
-const renderMatches = matches => {
+const sortMatchesBySchedule = matches =>
+  [...matches].sort((left, right) => {
+    const leftDate = left.date || currentDate || "";
+    const rightDate = right.date || currentDate || "";
+    if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+
+    const leftTime = left.time && left.time.trim().length > 0 ? left.time : "99:99";
+    const rightTime = right.time && right.time.trim().length > 0 ? right.time : "99:99";
+    return leftTime.localeCompare(rightTime);
+  });
+
+const createMatchCard = match => {
+  const card = document.createElement("article");
+  card.className = "match-card";
+  const matchDate = match.date || currentDate;
+  const sportId = Number(match.sport_id);
+  const matchStatus = getMatchStatus(matchDate, match.time, sportId);
+  card.classList.add(`is-${matchStatus}`);
+
+  const sportIndicator = document.createElement("div");
+  sportIndicator.className = "match-sport";
+  const sportConfig = Number.isFinite(sportId)
+    ? SPORT_CONFIG_BY_ID[sportId] || null
+    : null;
+  const indicatorPath = sportConfig?.icon || null;
+  if (indicatorPath) {
+    const indicator = document.createElement("img");
+    indicator.className = "sport-indicator";
+    indicator.src = indicatorPath;
+    const sportName = sportConfig?.name || match.sport?.name || "Sport";
+    const iconLabel = `${sportName} icon`;
+    indicator.alt = iconLabel;
+    indicator.setAttribute("aria-label", iconLabel);
+    sportIndicator.appendChild(indicator);
+  }
+
+  const time = document.createElement("div");
+  time.className = "match-time";
+  if (isDateRangeMode()) {
+    time.textContent = match.time || "TBD";
+  } else {
+    time.textContent = match.time || "";
+  }
+
+  const title = document.createElement("div");
+  title.className = "match-title";
+  const teamsText = formatTeams(match);
+  const hasHomeAndAwayTeams = Boolean(match.home_team?.name?.trim() && match.away_team?.name?.trim());
+  const locationText = formatLocation(match);
+  const competitionText = match.competition?.name || match.sport?.name || "";
+  title.textContent = hasHomeAndAwayTeams
+    ? teamsText
+    : competitionText || teamsText || locationText || "TBD";
+
+  const meta = document.createElement("div");
+  meta.className = "match-meta";
+  meta.textContent = hasHomeAndAwayTeams
+    ? competitionText || locationText
+    : locationText || teamsText;
+
+  const channels = document.createElement("div");
+  channels.className = "channels";
+  (match.channels || []).forEach(channel => {
+    const pill = document.createElement("span");
+    pill.style = "text-decoration:none;";
+    pill.className = "channel-pill";
+    pill.textContent = channel.name;
+    if (channel.primary_color) {
+      pill.style.background = channel.primary_color;
+    }
+    if (channel.text_color) {
+      pill.style.color = channel.text_color;
+    }
+    channels.appendChild(pill);
+  });
+
+  card.append(sportIndicator, time, title, meta, channels);
+  return card;
+};
+
+const renderEmptyState = () => {
+  if (!matchesEl) return;
   matchesEl.innerHTML = "";
+  const empty = document.createElement("div");
+  empty.className = "empty-state";
+  empty.innerHTML = `
+    <h2>No events found</h2>
+    <p>Try broadening your filters, switching date, or jumping to a sport page.</p>
+    <div class="empty-actions">
+      <button type="button" class="ghost" data-action="reset">Reset filters</button>
+      <a class="empty-link" href="/">Home</a>
+      <a class="empty-link" href="/watch/football/">Football</a>
+      <a class="empty-link" href="/watch/rugby/">Rugby</a>
+      <a class="empty-link" href="/watch/cricket/">Cricket</a>
+      <a class="empty-link" href="/watch/tennis/">Tennis</a>
+    </div>
+  `;
+  empty.querySelector('[data-action="reset"]').addEventListener("click", () => {
+    Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+    const url = new URL(window.location.href);
+    url.searchParams.delete("date");
+    url.searchParams.delete("view");
+    window.location.href = `${url.pathname}${url.search}`;
+  });
+  matchesEl.appendChild(empty);
+  updatePastMatchesVisibility();
+};
+
+const renderMatches = matches => {
   if (!matches.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.innerHTML = `
-      <h2>No events found</h2>
-      <p>Try broadening your filters, switching date, or jumping to a sport page.</p>
-      <div class="empty-actions">
-        <button type="button" class="ghost" data-action="reset">Reset filters</button>
-        <a class="empty-link" href="/">Home</a>
-        <a class="empty-link" href="/watch/football/">Football</a>
-        <a class="empty-link" href="/watch/rugby/">Rugby</a>
-        <a class="empty-link" href="/watch/cricket/">Cricket</a>
-        <a class="empty-link" href="/watch/tennis/">Tennis</a>
-      </div>
-    `;
-    empty.querySelector('[data-action="reset"]').addEventListener("click", () => {
-      Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
-      const url = new URL(window.location.href);
-      url.searchParams.delete("date");
-      window.location.href = `${url.pathname}${url.search}`;
-    });
-    matchesEl.appendChild(empty);
-    updatePastMatchesVisibility();
+    renderEmptyState();
     return;
   }
 
+  matchesEl.innerHTML = "";
+  const sortedMatches = sortMatchesBySchedule(matches);
   const fragment = document.createDocumentFragment();
-  matches.forEach(match => {
-    const card = document.createElement("article");
-    card.className = "match-card";
-    const matchDate = match.date || currentDate;
-    const sportId = Number(match.sport_id);
-    const matchStatus = getMatchStatus(matchDate, match.time, sportId);
-    card.classList.add(`is-${matchStatus}`);
+  if (isDateRangeMode()) {
+    let currentGroupDate = null;
+    let currentGroup = null;
 
-    const sportIndicator = document.createElement("div");
-    sportIndicator.className = "match-sport";
-    const sportConfig = Number.isFinite(sportId)
-      ? SPORT_CONFIG_BY_ID[sportId] || null
-      : null;
-    const indicatorPath = sportConfig?.icon || null;
-    if (indicatorPath) {
-      const indicator = document.createElement("img");
-      indicator.className = "sport-indicator";
-      indicator.src = indicatorPath;
-      const sportName = sportConfig?.name || match.sport?.name || "Sport";
-      const iconLabel = `${sportName} icon`;
-      indicator.alt = iconLabel;
-      indicator.setAttribute("aria-label", iconLabel);
-      sportIndicator.appendChild(indicator);
-    }
+    sortedMatches.forEach(match => {
+      const matchDate = match.date || currentDate;
+      if (matchDate !== currentGroupDate) {
+        currentGroupDate = matchDate;
+        currentGroup = document.createElement("section");
+        currentGroup.className = "match-day-group";
 
-    const time = document.createElement("div");
-    time.className = "match-time";
-    time.textContent = isDateRangeMode
-      ? `${formatCompactDate(matchDate)}${match.time ? ` ${match.time}` : ""}`
-      : match.time || "";
+        const heading = document.createElement("h2");
+        heading.className = "match-day-heading";
+        heading.textContent = formatGroupedDate(matchDate);
 
-    const title = document.createElement("div");
-    title.className = "match-title";
-    const teamsText = formatTeams(match);
-    const hasHomeAndAwayTeams = Boolean(match.home_team?.name?.trim() && match.away_team?.name?.trim());
-    const locationText = formatLocation(match);
-    const competitionText = match.competition?.name || match.sport?.name || "";
-    title.textContent = hasHomeAndAwayTeams
-      ? teamsText
-      : competitionText || teamsText || locationText || "TBD";
-
-    const meta = document.createElement("div");
-    meta.className = "match-meta";
-    meta.textContent = hasHomeAndAwayTeams
-      ? competitionText || locationText
-      : locationText || teamsText;
-
-    const channels = document.createElement("div");
-    channels.className = "channels";
-    (match.channels || []).forEach(channel => {
-      const pill = document.createElement("span");
-      // pill.href = `/broadcaster?id=${channel.id}`
-      pill.style = "text-decoration:none;"
-      pill.className = "channel-pill";
-      pill.textContent = channel.name;
-      if (channel.primary_color) {
-        pill.style.background = channel.primary_color;
+        currentGroup.appendChild(heading);
+        fragment.appendChild(currentGroup);
       }
-      if (channel.text_color) {
-        pill.style.color = channel.text_color;
-      }
-      channels.appendChild(pill);
+
+      currentGroup.appendChild(createMatchCard(match));
     });
-
-    card.append(sportIndicator, time, title, meta, channels);
-    fragment.appendChild(card);
-  });
+  } else {
+    sortedMatches.forEach(match => {
+      fragment.appendChild(createMatchCard(match));
+    });
+  }
 
   matchesEl.appendChild(fragment);
   updatePastMatchesVisibility();
@@ -874,6 +993,8 @@ const loadMatches = async () => {
     updateSeoMeta();
   }
   const date = currentDate;
+  updateDateViewAvailability();
+  updateDateNavigationLabels();
   updateTodayButtonVisibility();
   const filters = getSelectedMatchFilterParams();
 
@@ -895,11 +1016,15 @@ const handleInit = async () => {
     writeDateToUrl(currentDate);
     updateSeoMeta();
   }
+  updateDateViewAvailability();
+  updateDateNavigationLabels();
   updateDateBanner(currentDate);
   updateTodayButtonVisibility();
 
   try {
     await loadFilters();
+    updateDateViewAvailability();
+    updateDateNavigationLabels();
     await loadMatches();
   } catch (error) {
     setStatus(error.message || "Failed to load data.");
@@ -907,7 +1032,7 @@ const handleInit = async () => {
 };
 
 const shiftDay = direction => {
-  const next = getShiftedDate(currentDate, direction);
+  const next = getShiftedDate(currentDate, direction * getDateShiftAmount());
   currentDate = next;
   writeDateToUrl(currentDate === todayIso() ? null : currentDate);
   updateSeoMeta();
@@ -946,6 +1071,29 @@ if (prevDayButton && nextDayButton) {
   nextDayButton.addEventListener("click", () => shiftDay(1));
   registerDatePrefetch(prevDayButton, -1);
   registerDatePrefetch(nextDayButton, 1);
+}
+
+if (dayViewButton && weekViewButton) {
+  dayViewButton.addEventListener("click", () => {
+    if (currentView === DAY_VIEW) return;
+    currentView = DAY_VIEW;
+    writeViewToUrl(null);
+    updateDateViewAvailability();
+    updateDateNavigationLabels();
+    updateDateBanner(currentDate);
+    loadMatches().catch(error => setStatus(error.message));
+  });
+
+  weekViewButton.addEventListener("click", () => {
+    if (currentView === WEEK_VIEW) return;
+    if (!canUseWeekViewForSportIds(normalizeFilterIds(getCheckedSportIds()))) return;
+    currentView = WEEK_VIEW;
+    writeViewToUrl(WEEK_VIEW);
+    updateDateViewAvailability();
+    updateDateNavigationLabels();
+    updateDateBanner(currentDate);
+    loadMatches().catch(error => setStatus(error.message));
+  });
 }
 
 if (todayDayButton) {

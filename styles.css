@@ -520,6 +520,7 @@ button.ghost {
 .date-banner-actions {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -552,6 +553,39 @@ button.ghost {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(56, 163, 165, 0.06);
+}
+
+.view-toggle-button {
+  min-width: 52px;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.view-toggle-button.is-active {
+  background: var(--card);
+  color: var(--accent);
+  border: 1px solid rgba(47, 111, 109, 0.24);
+}
+
+.view-toggle-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .subtle-toggle {
@@ -613,6 +647,26 @@ button.ghost {
   border-radius: 12px;
   overflow: hidden;
   background: var(--card);
+}
+
+.match-day-group {
+  display: grid;
+}
+
+.match-day-group + .match-day-group {
+  border-top: 1px solid var(--border);
+}
+
+.match-day-heading {
+  margin: 0;
+  padding: 12px 16px 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(56, 163, 165, 0.05);
+  border-bottom: 1px solid var(--border);
 }
 
 .empty-state {

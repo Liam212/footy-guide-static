@@ -35,12 +35,29 @@ export const readDateFromUrl = () => {
   return Number.isNaN(parsed.getTime()) ? null : value;
 };
 
+export const readViewFromUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get("view");
+  return value === "week" ? "week" : null;
+};
+
 export const writeDateToUrl = value => {
   const url = new URL(window.location.href);
   if (value) {
     url.searchParams.set("date", value);
   } else {
     url.searchParams.delete("date");
+  }
+  const nextUrl = `${url.pathname}${url.search}`;
+  window.history.replaceState({}, "", nextUrl);
+};
+
+export const writeViewToUrl = value => {
+  const url = new URL(window.location.href);
+  if (value === "week") {
+    url.searchParams.set("view", value);
+  } else {
+    url.searchParams.delete("view");
   }
   const nextUrl = `${url.pathname}${url.search}`;
   window.history.replaceState({}, "", nextUrl);
