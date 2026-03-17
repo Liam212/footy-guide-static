@@ -109,6 +109,7 @@ const togglePastMatchesButton = document.getElementById("toggle-past-matches");
 const matchesEl = document.getElementById("matches");
 const themeToggleButton = document.getElementById("theme-toggle");
 const footerMoreLinks = document.querySelector(".footer-more-links");
+const EMPTY_STATE_LINK_GROUPS = ["Sports", "Featured", "Football", "Competitions", "Broadcasters"];
 
 const setStatus = message => {
   statusEl.textContent = message || "";
@@ -947,16 +948,43 @@ const renderEmptyState = () => {
   empty.className = "empty-state";
   empty.innerHTML = `
     <h2>No events found</h2>
-    <p>Try broadening your filters, switching date, or jumping to a sport page.</p>
+    <p>Try broadening your filters, switching date, or jumping to another page.</p>
     <div class="empty-actions">
       <button type="button" class="ghost" data-action="reset">Reset filters</button>
-      <a class="empty-link" href="/">Home</a>
-      <a class="empty-link" href="/watch/football/">Football</a>
-      <a class="empty-link" href="/watch/rugby/">Rugby</a>
-      <a class="empty-link" href="/watch/cricket/">Cricket</a>
-      <a class="empty-link" href="/watch/tennis/">Tennis</a>
     </div>
   `;
+
+  const actions = empty.querySelector(".empty-actions");
+  const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+  const seen = new Set(["/"]);
+  const suggestions = [{ href: "/", label: "Home" }];
+
+  EMPTY_STATE_LINK_GROUPS.forEach(group => {
+    if (!footerMoreLinks || suggestions.length >= 5) return;
+    const links = footerMoreLinks.querySelectorAll(
+      `[data-footer-group="${group}"] a[data-footer-link="1"]`
+    );
+    links.forEach(link => {
+      if (suggestions.length >= 5) return;
+      const href = link.getAttribute("href") || "";
+      const normalizedHref = href.replace(/\/+$/, "") || "/";
+      if (!href || seen.has(normalizedHref) || normalizedHref === currentPath) return;
+      suggestions.push({
+        href,
+        label: (link.textContent || "").trim(),
+      });
+      seen.add(normalizedHref);
+    });
+  });
+
+  suggestions.forEach(({ href, label }) => {
+    const link = document.createElement("a");
+    link.className = "empty-link";
+    link.href = href;
+    link.textContent = label;
+    actions?.appendChild(link);
+  });
+
   empty.querySelector('[data-action="reset"]').addEventListener("click", () => {
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
     const url = new URL(window.location.href);
