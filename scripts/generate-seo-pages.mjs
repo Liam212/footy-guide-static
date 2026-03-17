@@ -622,10 +622,7 @@ const main = async () => {
         canonicalPath: def.canonicalPath,
         heading: def.heading,
         intro: def.intro,
-        landingConfig: {
-          dateWindowDays: 14,
-          ...(def.landingConfig || {}),
-        },
+        landingConfig: def.landingConfig || {},
         footerLinksHtml,
       });
       await writeUtf8(path.join(def.outDir, "index.html"), html);

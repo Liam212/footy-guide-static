@@ -123,6 +123,10 @@ const STORAGE_KEYS = {
 
 const initLandingUi = () => {
   if (!landingConfig) return;
+  const sportControl = document.querySelector(".control-sports");
+  if (sportControl && landingIds.sportIds.length === 1) {
+    sportControl.hidden = true;
+  }
   if (!isLandingLocked) return;
   document.documentElement.setAttribute("data-landing-locked", "true");
   const controls = document.querySelector(".controls");
@@ -422,7 +426,7 @@ const syncSportPillState = () => {
   inputs.forEach(input => {
     const pill = input.closest(".pill");
     if (!pill) return;
-    pill.classList.toggle("is-active", input.checked && (isSeoLandingPage || !areAllSportsSelected));
+    pill.classList.toggle("is-active", input.checked && !areAllSportsSelected);
   });
 };
 
