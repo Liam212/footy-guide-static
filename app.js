@@ -2,6 +2,7 @@ import {
   todayIso,
   formatBannerDate,
   getShiftedDate,
+  getStartOfWeek,
   readDateFromUrl,
   readViewFromUrl,
   writeDateToUrl,
@@ -268,6 +269,14 @@ const isDateRangeMode = () => getCurrentDateWindowDays() > 1;
 
 const getRangeEndDate = date => getShiftedDate(date, getCurrentDateWindowDays() - 1);
 
+const normalizeCurrentDateForView = () => {
+  if (currentView !== WEEK_VIEW || hasFixedDateWindow) return false;
+  const normalizedDate = getStartOfWeek(currentDate || todayIso());
+  if (normalizedDate === currentDate) return false;
+  currentDate = normalizedDate;
+  return true;
+};
+
 const canUseWeekViewForSportIds = sportIds =>
   !hasFixedDateWindow &&
   sportIds.length === 1 &&
@@ -281,21 +290,27 @@ const syncDateViewControls = sportIds => {
   weekViewButton.classList.toggle("is-active", currentView === WEEK_VIEW);
   dayViewButton.setAttribute("aria-pressed", String(currentView === DAY_VIEW));
   weekViewButton.setAttribute("aria-pressed", String(currentView === WEEK_VIEW));
-  weekViewButton.disabled = !canUseWeekView;
 };
 
-const updateDateViewAvailability = () => {
+const updateDateViewAvailability = ({ preferDefaultView = false } = {}) => {
   if (!getSportInputs().length) {
     syncDateViewControls([]);
-    return;
+    return { sportIds: [], viewChanged: false };
   }
   const sportIds = normalizeFilterIds(getCheckedSportIds());
   const canUseWeekView = canUseWeekViewForSportIds(sportIds);
+  let viewChanged = false;
   if (!canUseWeekView && currentView === WEEK_VIEW) {
     currentView = DAY_VIEW;
     writeViewToUrl(null);
+    viewChanged = true;
+  } else if (preferDefaultView && canUseWeekView && currentView === DAY_VIEW) {
+    currentView = WEEK_VIEW;
+    writeViewToUrl(WEEK_VIEW);
+    viewChanged = true;
   }
   syncDateViewControls(sportIds);
+  return { sportIds, viewChanged };
 };
 
 const getDateShiftAmount = () => (currentView === WEEK_VIEW && !hasFixedDateWindow ? WEEK_VIEW_DAYS : 1);
@@ -439,7 +454,10 @@ const updateAdvancedFilterCount = () => {
 
 const refreshResultsForSportChange = () => {
   saveSportSelection();
-  updateDateViewAvailability();
+  updateDateViewAvailability({ preferDefaultView: true });
+  normalizeCurrentDateForView();
+  writeDateToUrl(currentDate === todayIso() ? null : currentDate);
+  updateSeoMeta();
   updateDateNavigationLabels();
   loadCompetitions()
     .then(() => {
@@ -820,7 +838,7 @@ const updateDateBanner = date => {
   if (!dateBannerEl) return;
   const windowDays = getCurrentDateWindowDays();
   if (currentView === WEEK_VIEW && !hasFixedDateWindow) {
-    dateBannerEl.textContent = `Next ${WEEK_VIEW_DAYS} days from ${formatBannerDate(date)}`;
+    dateBannerEl.textContent = `Week of ${formatBannerDate(date)}`;
     return;
   }
   dateBannerEl.textContent = windowDays > 1
@@ -992,10 +1010,11 @@ const loadMatches = async () => {
     writeDateToUrl(null);
     updateSeoMeta();
   }
-  const date = currentDate;
   updateDateViewAvailability();
+  normalizeCurrentDateForView();
   updateDateNavigationLabels();
   updateTodayButtonVisibility();
+  const date = currentDate;
   const filters = getSelectedMatchFilterParams();
 
   setStatus("Loading events...");
@@ -1012,18 +1031,22 @@ const handleInit = async () => {
   initFooterLinkTracking();
   const urlDate = readDateFromUrl();
   currentDate = urlDate || todayIso();
-  if (urlDate) {
-    writeDateToUrl(currentDate);
+  updateDateViewAvailability();
+  normalizeCurrentDateForView();
+  if (urlDate || currentView === WEEK_VIEW) {
+    writeDateToUrl(currentDate === todayIso() ? null : currentDate);
     updateSeoMeta();
   }
-  updateDateViewAvailability();
   updateDateNavigationLabels();
   updateDateBanner(currentDate);
   updateTodayButtonVisibility();
 
   try {
     await loadFilters();
-    updateDateViewAvailability();
+    updateDateViewAvailability({ preferDefaultView: true });
+    normalizeCurrentDateForView();
+    writeDateToUrl(currentDate === todayIso() ? null : currentDate);
+    updateSeoMeta();
     updateDateNavigationLabels();
     await loadMatches();
   } catch (error) {
@@ -1088,7 +1111,9 @@ if (dayViewButton && weekViewButton) {
     if (currentView === WEEK_VIEW) return;
     if (!canUseWeekViewForSportIds(normalizeFilterIds(getCheckedSportIds()))) return;
     currentView = WEEK_VIEW;
+    normalizeCurrentDateForView();
     writeViewToUrl(WEEK_VIEW);
+    writeDateToUrl(currentDate === todayIso() ? null : currentDate);
     updateDateViewAvailability();
     updateDateNavigationLabels();
     updateDateBanner(currentDate);
@@ -1098,8 +1123,10 @@ if (dayViewButton && weekViewButton) {
 
 if (todayDayButton) {
   todayDayButton.addEventListener("click", () => {
-    currentDate = todayIso();
-    writeDateToUrl(null);
+    currentDate = currentView === WEEK_VIEW && !hasFixedDateWindow
+      ? getStartOfWeek(todayIso())
+      : todayIso();
+    writeDateToUrl(currentDate === todayIso() ? null : currentDate);
     updateSeoMeta();
     loadMatches().catch(error => setStatus(error.message));
   });

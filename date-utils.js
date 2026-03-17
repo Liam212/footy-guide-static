@@ -27,6 +27,14 @@ export const getShiftedDate = (value, direction) => {
   return date.toISOString().split("T")[0];
 };
 
+export const getStartOfWeek = value => {
+  const date = parseDate(value || todayIso());
+  const day = date.getDay();
+  const offset = (day + 6) % 7;
+  date.setDate(date.getDate() - offset);
+  return date.toISOString().split("T")[0];
+};
+
 export const readDateFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   const value = params.get("date");
