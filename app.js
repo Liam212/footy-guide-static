@@ -43,7 +43,7 @@ const hasFixedDateWindow = landingDateWindowDays > 1;
 const DAY_VIEW = "day";
 const WEEK_VIEW = "week";
 const WEEK_VIEW_DAYS = 7;
-const WEEK_VIEW_SPORT_IDS = new Set([3, 4, 5]);
+const WEEK_VIEW_SPORT_IDS = new Set([2, 3, 4, 5]);
 const apiClient = createApiClient({
   apiUrl,
 });
