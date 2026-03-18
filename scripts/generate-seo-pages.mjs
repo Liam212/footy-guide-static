@@ -72,7 +72,7 @@ const MATCH_DURATION_BY_SPORT_ID = {
   4: 240,
   5: 240,
 };
-const SITEMAP_LASTMOD = new Date().toISOString();
+const RUN_LASTMOD = new Date().toISOString();
 
 const exists = async filePath => {
   try {
@@ -196,6 +196,23 @@ const fetchMatchesOrEmpty = async (params, context) => {
   }
 };
 
+const parseExistingSitemap = async filePath => {
+  if (!(await exists(filePath))) return new Map();
+
+  const contents = await readFile(filePath, "utf8");
+  const entries = new Map();
+  const urlBlocks = contents.match(/<url>[\s\S]*?<\/url>/g) || [];
+
+  urlBlocks.forEach(block => {
+    const locMatch = block.match(/<loc>([^<]+)<\/loc>/);
+    if (!locMatch) return;
+    const lastmodMatch = block.match(/<lastmod>([^<]+)<\/lastmod>/);
+    entries.set(locMatch[1], lastmodMatch?.[1] || "");
+  });
+
+  return entries;
+};
+
 const trackFileWrite = async filePath => {
   if (trackedPaths.has(filePath)) return;
   trackedPaths.add(filePath);
@@ -216,9 +233,18 @@ const trackFileWrite = async filePath => {
 };
 
 const writeUtf8 = async (filePath, contents) => {
+  const fileExists = await exists(filePath);
+  if (fileExists) {
+    const current = await readFile(filePath, "utf8");
+    if (current === contents) {
+      return { changed: false, existed: true };
+    }
+  }
+
   await trackFileWrite(filePath);
   await ensureDir(path.dirname(filePath));
   await writeFile(filePath, contents, "utf8");
+  return { changed: true, existed: fileExists };
 };
 
 const replacePlaceholder = (contents, placeholder, html) =>
@@ -226,12 +252,15 @@ const replacePlaceholder = (contents, placeholder, html) =>
     ? contents.replace(placeholder, html)
     : contents;
 
+const wrapStaticFooterLinksHtml = html =>
+  `<!-- SEO_PAGES_START -->\n${html}\n          <!-- SEO_PAGES_END -->`;
+
 const injectStaticPageSections = async ({ filePath, replacements = {}, footerLinksHtml }) => {
   let contents;
   try {
     contents = await readFile(filePath, "utf8");
   } catch {
-    return;
+    return false;
   }
 
   const original = contents;
@@ -239,14 +268,19 @@ const injectStaticPageSections = async ({ filePath, replacements = {}, footerLin
     contents = replacePlaceholder(contents, placeholder, html || "");
   });
 
+  const wrappedFooterLinksHtml = wrapStaticFooterLinksHtml(footerLinksHtml);
+  contents = replacePlaceholder(contents, "<!-- SEO_PAGES -->", wrappedFooterLinksHtml);
   contents = contents.replace(
-    /(<div class="footer-more-links"[^>]*>\s*)(?:<!-- SEO_PAGES -->|[\s\S]*?)(\s*<\/div>)/,
-    `$1${footerLinksHtml}$2`
+    /<!-- SEO_PAGES_START -->[\s\S]*?<!-- SEO_PAGES_END -->/,
+    wrappedFooterLinksHtml
   );
 
   if (contents !== original) {
-    await writeUtf8(filePath, contents);
+    const result = await writeUtf8(filePath, contents);
+    return result.changed;
   }
+
+  return false;
 };
 
 const buildSitemap = entries => {
@@ -959,6 +993,9 @@ const main = async () => {
       .filter(item => Number.isFinite(item?.id))
       .map(item => [Number(item.id), item])
   );
+  const existingSitemapEntries = await parseExistingSitemap(
+    path.join(OUT_DIR, "sitemap.xml")
+  );
 
   const sitemapUrls = new Map(
     [
@@ -966,7 +1003,13 @@ const main = async () => {
       `${SITE_URL}/about/`,
       `${SITE_URL}/faq/`,
       `${SITE_URL}/privacy/`,
-    ].map(url => [url, { loc: url, lastmod: SITEMAP_LASTMOD }])
+    ].map(url => [
+      url,
+      {
+        loc: url,
+        lastmod: existingSitemapEntries.get(url) || RUN_LASTMOD,
+      },
+    ])
   );
 
   const pageDefs = [];
@@ -984,7 +1027,7 @@ const main = async () => {
     });
     sitemapUrls.set(`${SITE_URL}${page.canonicalPath}`, {
       loc: `${SITE_URL}${page.canonicalPath}`,
-      lastmod: SITEMAP_LASTMOD,
+      lastmod: existingSitemapEntries.get(`${SITE_URL}${page.canonicalPath}`) || RUN_LASTMOD,
     });
   };
 
@@ -1145,7 +1188,6 @@ const main = async () => {
         page.canonicalPath
       );
       const limitedPreviewMatches = sortMatchesBySchedule(previewMatches).slice(0, 8);
-      const relatedPages = pickRelatedPages(page, seoPages);
       const html = pageShell({
         page,
         primaryNavHtml,
@@ -1158,13 +1200,21 @@ const main = async () => {
         }),
         footerLinksHtml,
       });
-      await writeUtf8(path.join(page.outDir, "index.html"), html);
+      const pageUrl = `${SITE_URL}${page.canonicalPath}`;
+      const result = await writeUtf8(path.join(page.outDir, "index.html"), html);
+      if (result.changed) {
+        sitemapUrls.set(pageUrl, {
+          loc: pageUrl,
+          lastmod: RUN_LASTMOD,
+        });
+      }
     })
   );
 
   const staticPages = [
     {
       filePath: path.join(OUT_DIR, "index.html"),
+      url: `${SITE_URL}/`,
       replacements: {
         "<!-- SEO_PRIMARY_NAV -->": primaryNavHtml,
         "<!-- HOME_SEO_HUB -->": homeHubHtml,
@@ -1173,18 +1223,21 @@ const main = async () => {
     },
     {
       filePath: path.join(OUT_DIR, "about", "index.html"),
+      url: `${SITE_URL}/about/`,
       replacements: {
         "<!-- SEO_PRIMARY_NAV -->": primaryNavHtml,
       },
     },
     {
       filePath: path.join(OUT_DIR, "faq", "index.html"),
+      url: `${SITE_URL}/faq/`,
       replacements: {
         "<!-- SEO_PRIMARY_NAV -->": primaryNavHtml,
       },
     },
     {
       filePath: path.join(OUT_DIR, "privacy", "index.html"),
+      url: `${SITE_URL}/privacy/`,
       replacements: {
         "<!-- SEO_PRIMARY_NAV -->": primaryNavHtml,
       },
@@ -1192,13 +1245,19 @@ const main = async () => {
   ];
 
   await Promise.all(
-    staticPages.map(entry =>
-      injectStaticPageSections({
+    staticPages.map(async entry => {
+      const changed = await injectStaticPageSections({
         filePath: entry.filePath,
         replacements: entry.replacements,
         footerLinksHtml,
-      })
-    )
+      });
+      if (changed) {
+        sitemapUrls.set(entry.url, {
+          loc: entry.url,
+          lastmod: RUN_LASTMOD,
+        });
+      }
+    })
   );
 
   await writeUtf8(
