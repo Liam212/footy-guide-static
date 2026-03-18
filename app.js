@@ -43,7 +43,7 @@ const hasFixedDateWindow = landingDateWindowDays > 1;
 const DAY_VIEW = "day";
 const WEEK_VIEW = "week";
 const WEEK_VIEW_DAYS = 7;
-const WEEK_VIEW_SPORT_IDS = new Set([2, 3, 4, 5]);
+const DEFAULT_WEEK_VIEW_SPORT_IDS = new Set([2, 3, 4, 5]);
 const apiClient = createApiClient({
   apiUrl,
 });
@@ -284,15 +284,16 @@ const getRangeEndDate = date =>
 
 const normalizeCurrentDateForView = () => false;
 
-const canUseWeekViewForSportIds = sportIds =>
-  !hasFixedDateWindow &&
-  sportIds.length === 1 &&
-  WEEK_VIEW_SPORT_IDS.has(sportIds[0]);
+const canUseWeekView = () => !hasFixedDateWindow;
 
-const syncDateViewControls = sportIds => {
+const shouldDefaultToWeekViewForSportIds = sportIds =>
+  canUseWeekView() &&
+  sportIds.length === 1 &&
+  DEFAULT_WEEK_VIEW_SPORT_IDS.has(sportIds[0]);
+
+const syncDateViewControls = () => {
   if (!dateViewToggle || !dayViewButton || !weekViewButton) return;
-  const canUseWeekView = canUseWeekViewForSportIds(sportIds);
-  dateViewToggle.hidden = !canUseWeekView;
+  dateViewToggle.hidden = !canUseWeekView();
   dayViewButton.classList.toggle("is-active", currentView === DAY_VIEW);
   weekViewButton.classList.toggle("is-active", currentView === WEEK_VIEW);
   dayViewButton.setAttribute("aria-pressed", String(currentView === DAY_VIEW));
@@ -301,22 +302,21 @@ const syncDateViewControls = sportIds => {
 
 const updateDateViewAvailability = ({ preferDefaultView = false } = {}) => {
   if (!getSportInputs().length) {
-    syncDateViewControls([]);
+    syncDateViewControls();
     return { sportIds: [], viewChanged: false };
   }
   const sportIds = normalizeFilterIds(getCheckedSportIds());
-  const canUseWeekView = canUseWeekViewForSportIds(sportIds);
   let viewChanged = false;
-  if (!canUseWeekView && currentView === WEEK_VIEW) {
+  if (!canUseWeekView() && currentView === WEEK_VIEW) {
     currentView = DAY_VIEW;
     writeViewToUrl(null);
     viewChanged = true;
-  } else if (preferDefaultView && canUseWeekView && currentView === DAY_VIEW) {
+  } else if (preferDefaultView && shouldDefaultToWeekViewForSportIds(sportIds) && currentView === DAY_VIEW) {
     currentView = WEEK_VIEW;
     writeViewToUrl(WEEK_VIEW);
     viewChanged = true;
   }
-  syncDateViewControls(sportIds);
+  syncDateViewControls();
   return { sportIds, viewChanged };
 };
 
@@ -1147,7 +1147,7 @@ if (dayViewButton && weekViewButton) {
 
   weekViewButton.addEventListener("click", () => {
     if (currentView === WEEK_VIEW) return;
-    if (!canUseWeekViewForSportIds(normalizeFilterIds(getCheckedSportIds()))) return;
+    if (!canUseWeekView()) return;
     currentView = WEEK_VIEW;
     normalizeCurrentDateForView();
     writeViewToUrl(WEEK_VIEW);
