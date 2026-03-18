@@ -272,15 +272,17 @@ const getCurrentDateWindowDays = () => {
 
 const isDateRangeMode = () => getCurrentDateWindowDays() > 1;
 
-const getRangeEndDate = date => getShiftedDate(date, getCurrentDateWindowDays() - 1);
-
-const normalizeCurrentDateForView = () => {
-  if (currentView !== WEEK_VIEW || hasFixedDateWindow) return false;
-  const normalizedDate = getStartOfWeek(currentDate || todayIso());
-  if (normalizedDate === currentDate) return false;
-  currentDate = normalizedDate;
-  return true;
+const getRangeStartDate = date => {
+  if (currentView === WEEK_VIEW && !hasFixedDateWindow) {
+    return getStartOfWeek(date || todayIso());
+  }
+  return date || todayIso();
 };
+
+const getRangeEndDate = date =>
+  getShiftedDate(getRangeStartDate(date), getCurrentDateWindowDays() - 1);
+
+const normalizeCurrentDateForView = () => false;
 
 const canUseWeekViewForSportIds = sportIds =>
   !hasFixedDateWindow &&
@@ -344,9 +346,10 @@ const getSelectedMatchFilterParams = () => {
 };
 
 const buildMatchParams = (date, filters = getSelectedMatchFilterParams()) => {
+  const startDate = getRangeStartDate(date);
   const endDate = getRangeEndDate(date);
   const params = {
-    start_date: date,
+    start_date: startDate,
     end_date: endDate,
   };
   if (filters.sportIds.length) params.sport_ids = filters.sportIds;
@@ -358,7 +361,7 @@ const buildMatchParams = (date, filters = getSelectedMatchFilterParams()) => {
 
 const getMatchRequestKey = (date, filters) =>
   buildParams({
-    start_date: date,
+    start_date: getRangeStartDate(date),
     end_date: getRangeEndDate(date),
     sport_ids: filters.sportIds,
     country_ids: filters.countryIds,
@@ -843,7 +846,10 @@ const updateDateBanner = date => {
   if (!dateBannerEl) return;
   const windowDays = getCurrentDateWindowDays();
   if (currentView === WEEK_VIEW && !hasFixedDateWindow) {
-    dateBannerEl.textContent = `Week of ${formatBannerDate(date)}`;
+    const rangeStartDate = getRangeStartDate(date);
+    dateBannerEl.textContent = rangeStartDate === getStartOfWeek(todayIso())
+      ? "This week"
+      : `Week of ${formatBannerDate(rangeStartDate)}`;
     return;
   }
   dateBannerEl.textContent = windowDays > 1
@@ -1155,9 +1161,7 @@ if (dayViewButton && weekViewButton) {
 
 if (todayDayButton) {
   todayDayButton.addEventListener("click", () => {
-    currentDate = currentView === WEEK_VIEW && !hasFixedDateWindow
-      ? getStartOfWeek(todayIso())
-      : todayIso();
+    currentDate = todayIso();
     writeDateToUrl(currentDate === todayIso() ? null : currentDate);
     updateSeoMeta();
     loadMatches().catch(error => setStatus(error.message));
