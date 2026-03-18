@@ -1,9 +1,13 @@
+const formatLocalIso = date => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const todayIso = () => {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return formatLocalIso(now);
 };
 
 export const parseDate = value => {
@@ -24,7 +28,7 @@ export const formatBannerDate = value => {
 export const getShiftedDate = (value, direction) => {
   const date = parseDate(value || todayIso());
   date.setDate(date.getDate() + direction);
-  return date.toISOString().split("T")[0];
+  return formatLocalIso(date);
 };
 
 export const getStartOfWeek = value => {
@@ -32,7 +36,7 @@ export const getStartOfWeek = value => {
   const day = date.getDay();
   const offset = (day + 6) % 7;
   date.setDate(date.getDate() - offset);
-  return date.toISOString().split("T")[0];
+  return formatLocalIso(date);
 };
 
 export const readDateFromUrl = () => {
