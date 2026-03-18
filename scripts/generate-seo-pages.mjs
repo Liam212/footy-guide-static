@@ -610,36 +610,8 @@ const buildPageParagraphs = ({ page, previewMatches }) => {
   }
 };
 
-const buildPageChecklist = ({ page, previewMatches }) => {
-  const competitions = summarizeCompetitions(previewMatches, 2);
-  const channels = summarizeChannels(previewMatches, 2);
-  const timeWindow = describeTimeWindow(previewMatches);
-  const scheduleLabel =
-    page.previewWindowDays > 1
-      ? `Fixtures scheduled across the next ${page.previewWindowDays} days.`
-      : "Fixtures scheduled for today.";
-
-  const items = [
-    scheduleLabel,
-    "Kick-off and start times shown in the schedule list.",
-    channels.length
-      ? `TV channels and streaming services currently listed include ${formatList(channels)}.`
-      : "TV channels and streaming services are shown when available.",
-    competitions.length
-      ? `Competitions currently listed include ${formatList(competitions)}.`
-      : "Competition listings appear here as schedule data is available.",
-  ];
-
-  if (timeWindow !== "throughout the day as listings are added") {
-    items[1] = `Start times currently run ${timeWindow}.`;
-  }
-
-  return items.slice(0, 4);
-};
-
 const buildStaticContentHtml = ({ page, previewMatches }) => {
   const paragraphs = buildPageParagraphs({ page, previewMatches });
-  const checklist = buildPageChecklist({ page, previewMatches });
   const sectionTitle = `${page.heading} guide`;
 
   return `<section class="seo-content" aria-label="About this page">
@@ -647,12 +619,6 @@ const buildStaticContentHtml = ({ page, previewMatches }) => {
           <h2>${escapeHtml(sectionTitle)}</h2>
           ${paragraphs.map(text => `<p>${escapeHtml(text)}</p>`).join("\n          ")}
         </article>
-        <section class="page-card seo-copy-card" aria-label="Key details">
-          <h2>Key details</h2>
-            <ul class="seo-list">
-              ${checklist.map(item => `<li>${escapeHtml(item)}</li>`).join("\n              ")}
-            </ul>
-        </section>
       </section>`;
 };
 
