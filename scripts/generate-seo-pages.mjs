@@ -629,35 +629,25 @@ const buildPageChecklist = ({ page, previewMatches, relatedPages }) => {
     );
   }
 
-  return items;
+  return items.slice(0, 4);
 };
 
 const buildStaticContentHtml = ({ page, previewMatches, relatedPages }) => {
   const paragraphs = buildPageParagraphs({ page, previewMatches, relatedPages });
   const checklist = buildPageChecklist({ page, previewMatches, relatedPages });
-  const relatedLinks = relatedPages.length
-    ? buildLinkGridHtml(relatedPages)
-    : `<p class="seo-empty-copy">More related pages will appear here as the SEO link set grows.</p>`;
+  const sectionTitle = `${page.heading} guide`;
 
   return `<section class="seo-content" aria-label="About this page">
         <article class="page-card seo-copy-card">
-          <h2>About this page</h2>
+          <h2>${escapeHtml(sectionTitle)}</h2>
           ${paragraphs.map(text => `<p>${escapeHtml(text)}</p>`).join("\n          ")}
         </article>
-        <div class="seo-section-grid">
-          <section class="page-card seo-copy-card" aria-label="What you can find here">
-            <h2>What you can find here</h2>
+        <section class="page-card seo-copy-card" aria-label="Key details">
+          <h2>Key details</h2>
             <ul class="seo-list">
               ${checklist.map(item => `<li>${escapeHtml(item)}</li>`).join("\n              ")}
             </ul>
-          </section>
-          <nav class="page-card seo-copy-card" aria-label="Related pages">
-            <h2>Related pages</h2>
-            <div class="seo-link-grid">
-              ${relatedLinks}
-            </div>
-          </nav>
-        </div>
+        </section>
       </section>`;
 };
 
@@ -854,7 +844,6 @@ const pageShell = ({
       </header>
 
       ${primaryNavHtml}
-      ${staticContentHtml}
 
       <section class="controls" aria-label="Filters">
         <div class="control full-row control-sports">
@@ -938,6 +927,8 @@ const pageShell = ({
       <section id="matches" class="matches" aria-label="Match list">
         ${matchPreviewHtml}
       </section>
+
+      ${staticContentHtml}
 
       <footer class="site-footer" aria-label="Site links">
         <div class="footer-more-links" aria-label="Browse pages">
