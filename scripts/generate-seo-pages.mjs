@@ -72,6 +72,11 @@ const MATCH_DURATION_BY_SPORT_ID = {
   4: 240,
   5: 240,
 };
+const MATCH_STATUS_LABELS = {
+  upcoming: "Upcoming",
+  ongoing: "Live now",
+  finished: "Finished",
+};
 const RUN_LASTMOD = new Date().toISOString();
 
 const exists = async filePath => {
@@ -168,6 +173,23 @@ const formatTime = value => {
   const text = String(value || "").trim();
   if (!text) return "TBD";
   return text.slice(0, 5);
+};
+
+const formatAnnouncementDate = value => {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value || "";
+  return date.toLocaleDateString("en-GB", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: UK_TIMEZONE,
+  });
+};
+
+const formatAnnouncementTime = (_date, time) => {
+  const text = String(time || "").trim();
+  if (!text) return "Time to be confirmed";
+  return text.length > 5 ? text.slice(0, 5) : text;
 };
 
 const fetchJson = async (apiPath, params = {}) => {
@@ -565,6 +587,30 @@ const getMatchStatus = match => {
   return "upcoming";
 };
 
+const buildMatchAnnouncement = ({ match, statusClass, titleText, metaText }) => {
+  const sportName = match.sport?.name?.trim() || "Sport";
+  const parts = [];
+  const addPart = value => {
+    const text = typeof value === "string" ? value.trim() : "";
+    if (!text || parts.includes(text)) return;
+    parts.push(text);
+  };
+
+  addPart(`${MATCH_STATUS_LABELS[statusClass] || "Upcoming"} ${sportName} event`);
+  addPart(formatAnnouncementDate(match.date || ""));
+  addPart(formatAnnouncementTime(match.date || "", match.time));
+  addPart(titleText);
+  addPart(metaText);
+
+  const channelsText = (match.channels || [])
+    .map(channel => channel.name?.trim() || "")
+    .filter(Boolean)
+    .join(", ");
+  addPart(channelsText ? `Available on ${channelsText}` : "Broadcaster details unavailable");
+
+  return parts.join(". ");
+};
+
 const summarizeTeams = (matches, limit = 3) =>
   dedupeStrings(matches.map(formatTeams)).slice(0, limit);
 
@@ -725,12 +771,22 @@ const renderStaticMatchesHtml = (matches, { groupByDate = false } = {}) => {
         return `<span class="channel-pill"${styleAttr}>${escapeHtml(channel.name)}</span>`;
       })
       .join("");
+    const timeText = formatTime(match.time);
+    const timeDateTime = timeText !== "TBD" && match.date
+      ? `${match.date}T${timeText}`
+      : match.date || "";
+    const matchAnnouncement = buildMatchAnnouncement({
+      match,
+      statusClass,
+      titleText,
+      metaText,
+    });
 
-    return `<article class="match-card is-${statusClass}">
+    return `<article class="match-card is-${statusClass}" tabindex="0" aria-label="${escapeHtml(matchAnnouncement)}">
         <div class="match-sport" aria-hidden="true"></div>
-        <div class="match-time">${escapeHtml(formatTime(match.time))}</div>
-        <div class="match-title">${escapeHtml(titleText)}</div>
-        <div class="match-meta">${escapeHtml(metaText)}</div>
+        <time class="match-time"${timeDateTime ? ` datetime="${escapeHtml(timeDateTime)}"` : ""}>${escapeHtml(timeText)}</time>
+        <h4 class="match-title">${escapeHtml(titleText)}</h4>
+        <p class="match-meta">${escapeHtml(metaText)}</p>
         <div class="channels">${channelsHtml}</div>
       </article>`;
   };
@@ -815,6 +871,7 @@ const pageShell = ({
     ${buildStructuredDataHtml(page)}
   </head>
   <body>
+    <a class="skip-link" href="#matches-start">Skip to matches</a>
     <div class="app">
       <header class="site-header">
         <div class="site-header-row">
@@ -836,89 +893,107 @@ const pageShell = ({
         </div>
       </header>
 
-      <section class="controls" aria-label="Filters">
-        <div class="control full-row control-sports">
-          <label>Sports</label>
-          <div id="sport-pills" class="pill-group" role="group" aria-label="Sports"></div>
-        </div>
-        <div class="control control-country">
-          <label for="country-search">Countries</label>
-          <div id="country-filter" class="multi-select">
-            <div class="multi-select-box">
-              <div id="country-pills" class="token-pills"></div>
-              <input id="country-search" type="search" placeholder="Search countries" />
-            </div>
-            <div id="country-options" class="options" role="listbox" aria-label="Countries"></div>
+      <main id="main-content" class="home-main">
+        <section class="controls" aria-label="Filters">
+          <div class="control full-row control-sports">
+            <label>Sports</label>
+            <div id="sport-pills" class="pill-group" role="group" aria-label="Sports"></div>
           </div>
-        </div>
-        <details class="advanced" id="advanced-filters">
-          <summary>
-            <span>More filters</span>
-            <span id="advanced-count" class="filter-count" hidden>0</span>
-          </summary>
-          <div class="advanced-panel">
-            <div class="control">
-              <label for="broadcaster-search">Broadcasters</label>
-              <div id="broadcaster-filter" class="multi-select">
-                <div class="multi-select-box">
-                  <div id="broadcaster-pills" class="token-pills"></div>
-                  <input id="broadcaster-search" type="search" placeholder="Search broadcasters" />
+          <div class="control control-country">
+            <label for="country-search">Countries</label>
+            <div id="country-filter" class="multi-select">
+              <div class="multi-select-box">
+                <div id="country-pills" class="token-pills"></div>
+                <input id="country-search" type="search" placeholder="Search countries" />
+              </div>
+              <div
+                id="country-options"
+                class="options"
+                role="listbox"
+                aria-label="Countries"
+                aria-multiselectable="true"></div>
+            </div>
+          </div>
+          <details class="advanced" id="advanced-filters">
+            <summary>
+              <span>More filters</span>
+              <span id="advanced-count" class="filter-count" hidden>0</span>
+            </summary>
+            <div class="advanced-panel">
+              <div class="control">
+                <label for="broadcaster-search">Broadcasters</label>
+                <div id="broadcaster-filter" class="multi-select">
+                  <div class="multi-select-box">
+                    <div id="broadcaster-pills" class="token-pills"></div>
+                    <input id="broadcaster-search" type="search" placeholder="Search broadcasters" />
+                  </div>
+                  <div
+                    id="broadcaster-options"
+                    class="options"
+                    role="listbox"
+                    aria-label="Broadcasters"
+                    aria-multiselectable="true"></div>
                 </div>
-                <div id="broadcaster-options" class="options" role="listbox" aria-label="Broadcasters"></div>
+              </div>
+              <div class="control">
+                <label for="competition-search">Competitions</label>
+                <div id="competition-filter" class="multi-select">
+                  <div class="multi-select-box">
+                    <div id="competition-pills" class="token-pills"></div>
+                    <input id="competition-search" type="search" placeholder="Search competitions" />
+                  </div>
+                  <div
+                    id="competition-options"
+                    class="options"
+                    role="listbox"
+                    aria-label="Competitions"
+                    aria-multiselectable="true"></div>
+                </div>
               </div>
             </div>
-            <div class="control">
-              <label for="competition-search">Competitions</label>
-              <div id="competition-filter" class="multi-select">
-                <div class="multi-select-box">
-                  <div id="competition-pills" class="token-pills"></div>
-                  <input id="competition-search" type="search" placeholder="Search competitions" />
-                </div>
-                <div id="competition-options" class="options" role="listbox" aria-label="Competitions"></div>
-              </div>
+          </details>
+        </section>
+
+        <section class="status" aria-label="Results status">
+          <p id="status" role="status" aria-atomic="true"></p>
+        </section>
+
+        <section class="date-banner" aria-label="Selected date">
+          <div class="date-banner-main">
+            <button id="prev-day" type="button" class="date-nav" aria-label="Previous day">
+              &#x2039;
+            </button>
+            <p id="date-banner" class="date-label"></p>
+            <button id="next-day" type="button" class="date-nav" aria-label="Next day">
+              &#x203A;
+            </button>
+          </div>
+          <div class="date-banner-actions">
+            <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
+              <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
+                Day
+              </button>
+              <button id="view-week" type="button" class="view-toggle-button" aria-pressed="false">
+                Week
+              </button>
             </div>
-          </div>
-        </details>
-      </section>
-
-      <section class="status" aria-live="polite">
-        <p id="status"></p>
-      </section>
-
-      <section class="date-banner" aria-label="Selected date">
-        <div class="date-banner-main">
-          <button id="prev-day" type="button" class="date-nav" aria-label="Previous day">
-            &#x2039;
-          </button>
-          <p id="date-banner" class="date-label"></p>
-          <button id="next-day" type="button" class="date-nav" aria-label="Next day">
-            &#x203A;
-          </button>
-        </div>
-        <div class="date-banner-actions">
-          <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
-            <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
-              Day
+            <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden" aria-label="Go to today">
+              Today
             </button>
-            <button id="view-week" type="button" class="view-toggle-button" aria-pressed="false">
-              Week
+            <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
+              Show past events
             </button>
           </div>
-          <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden" aria-label="Go to today">
-            Today
-          </button>
-          <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
-            Show past events
-          </button>
-        </div>
-      </section>
+        </section>
 
-      <section id="matches" class="matches" aria-label="Match list">
-        ${matchPreviewHtml}
-      </section>
+        <div id="matches-start" class="sr-only" tabindex="-1">Match results</div>
+        <section id="matches" class="matches" aria-label="Match list">
+          ${matchPreviewHtml}
+        </section>
 
-      ${primaryNavHtml}
-      ${staticContentHtml}
+        ${primaryNavHtml}
+        ${staticContentHtml}
+      </main>
 
       <footer class="site-footer" aria-label="Site links">
         <div class="footer-more-links" aria-label="Browse pages">

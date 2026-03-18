@@ -110,9 +110,19 @@ const matchesEl = document.getElementById("matches");
 const themeToggleButton = document.getElementById("theme-toggle");
 const footerMoreLinks = document.querySelector(".footer-more-links");
 const EMPTY_STATE_LINK_GROUPS = ["Sports", "Featured", "Football", "Competitions", "Broadcasters"];
+const MATCH_STATUS_LABELS = {
+  upcoming: "Upcoming",
+  ongoing: "Live now",
+  finished: "Finished",
+};
 
 const setStatus = message => {
   statusEl.textContent = message || "";
+};
+
+const setMatchesBusy = isBusy => {
+  if (!matchesEl) return;
+  matchesEl.setAttribute("aria-busy", String(Boolean(isBusy)));
 };
 
 const STORAGE_KEYS = {
@@ -241,7 +251,11 @@ const updateVisibleEventsStatus = () => {
     setStatus("Showing 0 event(s).");
     return;
   }
-  setStatus(`Showing ${visibleCount} event(s).`);
+  setStatus(
+    visibleCount === totalCount
+      ? `Showing ${visibleCount} event(s).`
+      : `Showing ${visibleCount} of ${totalCount} event(s).`
+  );
 };
 
 const updatePastMatchesVisibility = () => {
@@ -524,6 +538,10 @@ const createMultiFilter = ({
     onChange,
   };
 
+  searchInput.setAttribute("aria-haspopup", "listbox");
+  searchInput.setAttribute("aria-controls", optionsEl.id);
+  searchInput.setAttribute("aria-expanded", "false");
+
   const renderPills = () => {
     pillsEl.innerHTML = "";
     const fragment = document.createDocumentFragment();
@@ -557,6 +575,7 @@ const createMultiFilter = ({
     if (visible.length === 0) {
       const empty = document.createElement("div");
       empty.className = "option-item";
+      empty.setAttribute("role", "presentation");
       empty.textContent = "No results";
       fragment.appendChild(empty);
     } else {
@@ -564,6 +583,8 @@ const createMultiFilter = ({
         const option = document.createElement("div");
         option.className = "option-item";
         option.setAttribute("data-id", String(item.id));
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", String(filter.selected.has(item.id)));
         if (filter.selected.has(item.id)) {
           option.classList.add("is-selected");
         }
@@ -584,11 +605,13 @@ const createMultiFilter = ({
 
   const openOptions = () => {
     optionsEl.classList.add("is-open");
+    searchInput.setAttribute("aria-expanded", "true");
     renderOptions();
   };
 
   const closeOptions = () => {
     optionsEl.classList.remove("is-open");
+    searchInput.setAttribute("aria-expanded", "false");
   };
 
   const toggleSelection = id => {
@@ -813,6 +836,52 @@ const formatGroupedDate = value => {
   });
 };
 
+const formatAnnouncementDate = value => {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value || "";
+  return date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+const formatAnnouncementTime = (_date, time) => {
+  const normalizedTime = time && time.trim().length > 0 ? time.trim() : "";
+  if (!normalizedTime) return "Time to be confirmed";
+  return normalizedTime.length > 5 ? normalizedTime.slice(0, 5) : normalizedTime;
+};
+
+const buildMatchAnnouncement = ({
+  match,
+  matchDate,
+  matchStatus,
+  sportName,
+  titleText,
+  metaText,
+}) => {
+  const parts = [];
+  const addPart = value => {
+    const text = typeof value === "string" ? value.trim() : "";
+    if (!text || parts.includes(text)) return;
+    parts.push(text);
+  };
+
+  addPart(`${MATCH_STATUS_LABELS[matchStatus] || "Upcoming"} ${sportName} event`);
+  addPart(formatAnnouncementDate(matchDate));
+  addPart(formatAnnouncementTime(matchDate, match.time));
+  addPart(titleText);
+  addPart(metaText);
+
+  const channelsText = (match.channels || [])
+    .map(channel => channel.name?.trim() || "")
+    .filter(Boolean)
+    .join(", ");
+  addPart(channelsText ? `Available on ${channelsText}` : "Broadcaster details unavailable");
+
+  return parts.join(". ");
+};
+
 const formatLocation = match => {
   const venueName = match.venue?.name?.trim() || "";
   const venueCity =
@@ -881,6 +950,7 @@ const sortMatchesBySchedule = matches =>
 const createMatchCard = match => {
   const card = document.createElement("article");
   card.className = "match-card";
+  card.tabIndex = 0;
   const matchDate = match.date || currentDate;
   const sportId = Number(match.sport_id);
   const matchStatus = getMatchStatus(matchDate, match.time, sportId);
@@ -891,41 +961,48 @@ const createMatchCard = match => {
   const sportConfig = Number.isFinite(sportId)
     ? SPORT_CONFIG_BY_ID[sportId] || null
     : null;
+  const sportName = sportConfig?.name || match.sport?.name || "Sport";
   const indicatorPath = sportConfig?.icon || null;
   if (indicatorPath) {
     const indicator = document.createElement("img");
     indicator.className = "sport-indicator";
     indicator.src = indicatorPath;
-    const sportName = sportConfig?.name || match.sport?.name || "Sport";
-    const iconLabel = `${sportName} icon`;
-    indicator.alt = iconLabel;
-    indicator.setAttribute("aria-label", iconLabel);
+    indicator.alt = "";
+    indicator.setAttribute("aria-hidden", "true");
     sportIndicator.appendChild(indicator);
   }
 
-  const time = document.createElement("div");
+  const time = document.createElement("time");
   time.className = "match-time";
+  const normalizedTime = match.time && match.time.trim().length > 0 ? match.time.trim() : "";
+  if (normalizedTime) {
+    time.dateTime = `${matchDate}T${normalizedTime}`;
+  } else if (matchDate) {
+    time.dateTime = matchDate;
+  }
   if (isDateRangeMode()) {
-    time.textContent = match.time || "TBD";
+    time.textContent = normalizedTime || "TBD";
   } else {
-    time.textContent = match.time || "";
+    time.textContent = normalizedTime || "";
   }
 
-  const title = document.createElement("div");
+  const title = document.createElement("h3");
   title.className = "match-title";
   const teamsText = formatTeams(match);
   const hasHomeAndAwayTeams = Boolean(match.home_team?.name?.trim() && match.away_team?.name?.trim());
   const locationText = formatLocation(match);
   const competitionText = match.competition?.name || match.sport?.name || "";
-  title.textContent = hasHomeAndAwayTeams
+  const titleText = hasHomeAndAwayTeams
     ? teamsText
     : competitionText || teamsText || locationText || "TBD";
+  title.textContent = titleText;
 
-  const meta = document.createElement("div");
+  const meta = document.createElement("p");
   meta.className = "match-meta";
-  meta.textContent = hasHomeAndAwayTeams
+  const metaText = hasHomeAndAwayTeams
     ? competitionText || locationText
     : locationText || teamsText;
+  meta.textContent = metaText;
 
   const channels = document.createElement("div");
   channels.className = "channels";
@@ -943,6 +1020,17 @@ const createMatchCard = match => {
     channels.appendChild(pill);
   });
 
+  card.setAttribute(
+    "aria-label",
+    buildMatchAnnouncement({
+      match,
+      matchDate,
+      matchStatus,
+      sportName,
+      titleText,
+      metaText,
+    })
+  );
   card.append(sportIndicator, time, title, meta, channels);
   return card;
 };
@@ -1055,11 +1143,16 @@ const loadMatches = async () => {
   const date = currentDate;
   const filters = getSelectedMatchFilterParams();
 
+  setMatchesBusy(true);
   setStatus("Loading events...");
-  const matches = await fetchMatchesForDate(date, filters);
-  renderMatches(matches);
-  updateDateBanner(date);
-  updateTodayButtonVisibility();
+  try {
+    const matches = await fetchMatchesForDate(date, filters);
+    renderMatches(matches);
+    updateDateBanner(date);
+    updateTodayButtonVisibility();
+  } finally {
+    setMatchesBusy(false);
+  }
 };
 
 const handleInit = async () => {
