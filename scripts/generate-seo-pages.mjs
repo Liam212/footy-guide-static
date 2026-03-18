@@ -325,9 +325,8 @@ const buildHomeHubHtml = ({ featuredPages, competitionPages, sportPages, footbal
         <article class="page-card seo-copy-card">
           <h2>Browse by competition and sport</h2>
           <p>
-            These links are rendered directly into the homepage HTML so important landing pages are
-            never hidden behind JavaScript filters alone. Start with today’s listings, jump into a
-            major football competition, or open a sport-specific schedule page in one click.
+            Not found what you're looking for? Jump straight to a competition, sport, or today page
+            to narrow the schedule faster and browse the most popular live TV guides in one click.
           </p>
         </article>
         <div class="seo-section-grid">
