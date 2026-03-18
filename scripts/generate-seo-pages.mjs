@@ -843,8 +843,6 @@ const pageShell = ({
         </div>
       </header>
 
-      ${primaryNavHtml}
-
       <section class="controls" aria-label="Filters">
         <div class="control full-row control-sports">
           <label>Sports</label>
@@ -928,6 +926,7 @@ const pageShell = ({
         ${matchPreviewHtml}
       </section>
 
+      ${primaryNavHtml}
       ${staticContentHtml}
 
       <footer class="site-footer" aria-label="Site links">
