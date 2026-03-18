@@ -548,92 +548,98 @@ const describeTimeWindow = matches => {
   return `from ${values[0]} to ${values.at(-1)} UK time`;
 };
 
-const buildPageParagraphs = ({ page, previewMatches, relatedPages }) => {
+const buildScheduleLabel = page =>
+  page.previewWindowDays > 1 ? `the next ${page.previewWindowDays} days` : "today";
+
+const buildDataSummary = ({ competitions, channels, timeWindow }) => {
+  const parts = [];
+  if (competitions.length) {
+    parts.push(`Current listings include ${formatList(competitions)}.`);
+  }
+  if (channels.length) {
+    parts.push(`Channels currently shown include ${formatList(channels)}.`);
+  }
+  if (timeWindow) {
+    parts.push(`Start times on this page currently run ${timeWindow}.`);
+  }
+  if (!parts.length) {
+    parts.push("Listings update as new schedule data becomes available.");
+  }
+  return parts.join(" ");
+};
+
+const buildPageParagraphs = ({ page, previewMatches }) => {
   const competitions = summarizeCompetitions(previewMatches);
-  const teams = summarizeTeams(previewMatches);
   const channels = summarizeChannels(previewMatches);
   const timeWindow = describeTimeWindow(previewMatches);
-  const competitionText = competitions.length
-    ? formatList(competitions)
-    : "the latest available listings in this category";
-  const teamText = teams.length
-    ? formatList(teams)
-    : "a rotating set of upcoming fixtures";
-  const channelText = channels.length
-    ? formatList(channels)
-    : "the channels that appear in the current feed";
-  const relatedText = relatedPages.length
-    ? formatList(relatedPages.slice(0, 3).map(entry => entry.label))
-    : "other major Where Is Match pages";
+  const scheduleLabel = buildScheduleLabel(page);
+  const dataSummary = buildDataSummary({ competitions, channels, timeWindow });
 
   switch (page.pageType) {
     case "competition":
       return [
-        `This ${page.entityName} guide is a dedicated landing page for UK viewers who want fixtures, kick-off times, and broadcast information in one place. Instead of relying on JavaScript alone, the page is published with crawlable HTML content, featured listings, and internal links from the moment the build finishes.`,
-        `Recent build data on this page highlights ${competitionText}. Example fixtures currently include ${teamText}, while broadcast listings mention ${channelText} when that information is available in the feed. That makes the page materially different from a generic filter state and gives the competition its own indexable context.`,
-        `Use this page to check ${page.entityName.toLowerCase()} coverage ${timeWindow}, compare channels, and move to nearby hubs such as ${relatedText}. The interactive app still refreshes the latest schedule after load, but the core topic and example fixtures are already present in the initial HTML.`,
+        `Use this page to check ${page.entityName.toLowerCase()} fixtures on TV in the UK across ${scheduleLabel}, with kick-off times and broadcaster listings in one place.`,
+        dataSummary,
       ];
     case "broadcaster":
       return [
-        `This ${page.entityName} page groups live sport currently listed on ${page.entityName} for UK viewers. It exists as a crawlable landing page rather than a blank JavaScript shell, so search engines can see broadcaster-specific content, internal links, and featured fixtures without waiting for the app to hydrate.`,
-        `The current build shows competitions such as ${competitionText}, with example fixtures including ${teamText}. That gives the page visible broadcaster context and helps differentiate it from competition pages, sport hubs, and today pages elsewhere on the site.`,
-        `Use this page to understand what is appearing on ${page.entityName}, check start times ${timeWindow}, and jump to related hubs like ${relatedText}. As new schedule data arrives the live interface enhances the page, but the static HTML already answers the basic query intent.`,
+        `Use this page to see which live sport is currently listed on ${page.entityName} in the UK across ${scheduleLabel}.`,
+        dataSummary,
       ];
     case "country-football":
       return [
-        `This ${page.entityName.toLowerCase()} football page narrows the site down to competitions and fixtures connected with that football market. It is intended to rank as a dedicated landing page for UK users looking for ${page.entityName.toLowerCase()} football on TV, rather than sending every searcher to the same generic football template.`,
-        `Current build output for this page includes competitions such as ${competitionText}, along with example fixtures like ${teamText}. When broadcaster data is present, listings on this page currently reference ${channelText}, which gives the topic real on-page context before the live app takes over.`,
-        `The page is also wired into the wider internal-link structure, with direct paths to ${relatedText}. That makes the content reachable in a couple of clicks from the homepage and helps search engines understand how this football niche relates to the rest of the guide.`,
+        `Use this page to follow ${page.entityName.toLowerCase()} football on TV in the UK across ${scheduleLabel}, including fixtures, kick-off times, and broadcaster listings.`,
+        dataSummary,
       ];
     case "today-all":
       return [
-        `This matches today page is the shortest route to live sport listings for UK viewers. The build pre-renders featured events directly into the HTML so the page is useful to crawlers and users even before JavaScript refreshes the live feed.`,
-        `Today’s snapshot currently covers ${competitionText}, with example fixtures such as ${teamText}. Where broadcast data exists, the page surfaces channels like ${channelText}, so the landing page has real schedule information instead of an empty placeholder.`,
-        `Use this page to scan what is on ${timeWindow}, then move to more specific hubs such as ${relatedText}. That combination of static copy, visible links, and featured listings gives Google a stronger reason to crawl and keep revisiting the page.`,
+        "Use this page to see what sport is on TV today in the UK, with start times and broadcaster listings grouped in one place.",
+        dataSummary,
       ];
     case "today-football":
       return [
-        `This football on TV today page is built for UK users who want live football listings without drilling through filters first. The page ships with static HTML content, related links, and featured fixtures so the core answer is visible before the app enhances it.`,
-        `Today’s build currently highlights ${competitionText}, with example fixtures including ${teamText}. Broadcast listings shown in the HTML mention ${channelText} when available, giving the page concrete schedule content rather than a thin shell.`,
-        `Use it to check football coverage ${timeWindow}, compare broadcasters, and move quickly to pages like ${relatedText}. That keeps the page useful for both users and crawlers while the interactive filters continue to provide the full schedule after load.`,
+        "Use this page to see football on TV today in the UK, with kick-off times and broadcaster listings in one place.",
+        dataSummary,
       ];
     case "sport":
     default:
       return [
-        `This ${page.entityName} on TV page is designed as a crawlable landing page for UK viewers who want fixtures, start times, and channel information in one place. The build outputs real HTML content and featured events up front, so the page is not dependent on JavaScript to explain its topic.`,
-        `Current listings on this page include ${competitionText}, with example fixtures such as ${teamText}. When channel data is present in the feed, the page also highlights ${channelText}, giving the landing page more context than a repeated template with an empty results container.`,
-        `Use this hub to scan ${page.entityName.toLowerCase()} coverage ${timeWindow}, compare broadcasters, and move to related pages like ${relatedText}. The live interface still updates the schedule after load, but the important topic signals are already embedded in the initial response.`,
+        `Use this page to check ${page.entityName.toLowerCase()} on TV in the UK across ${scheduleLabel}, with fixtures, start times, and broadcaster listings in one place.`,
+        dataSummary,
       ];
   }
 };
 
-const buildPageChecklist = ({ page, previewMatches, relatedPages }) => {
-  const dateLabel =
+const buildPageChecklist = ({ page, previewMatches }) => {
+  const competitions = summarizeCompetitions(previewMatches, 2);
+  const channels = summarizeChannels(previewMatches, 2);
+  const timeWindow = describeTimeWindow(previewMatches);
+  const scheduleLabel =
     page.previewWindowDays > 1
-      ? `Featured listings from the next ${page.previewWindowDays} days in the HTML response.`
-      : "Featured listings for today in the HTML response.";
+      ? `Fixtures scheduled across the next ${page.previewWindowDays} days.`
+      : "Fixtures scheduled for today.";
 
   const items = [
-    dateLabel,
-    "Kick-off or start times shown in a static, crawlable page section.",
-    "Broadcaster and channel labels included when the feed provides them.",
-    relatedPages.length
-      ? `Visible internal links to ${formatList(relatedPages.slice(0, 3).map(entry => entry.label))}.`
-      : "Visible internal links to nearby category pages.",
+    scheduleLabel,
+    "Kick-off and start times shown in the schedule list.",
+    channels.length
+      ? `TV channels and streaming services currently listed include ${formatList(channels)}.`
+      : "TV channels and streaming services are shown when available.",
+    competitions.length
+      ? `Competitions currently listed include ${formatList(competitions)}.`
+      : "Competition listings appear here as schedule data is available.",
   ];
 
-  if (previewMatches.length) {
-    items.push(
-      `Example fixtures currently include ${formatList(summarizeTeams(previewMatches, 2))}.`
-    );
+  if (timeWindow !== "throughout the day as listings are added") {
+    items[1] = `Start times currently run ${timeWindow}.`;
   }
 
   return items.slice(0, 4);
 };
 
-const buildStaticContentHtml = ({ page, previewMatches, relatedPages }) => {
-  const paragraphs = buildPageParagraphs({ page, previewMatches, relatedPages });
-  const checklist = buildPageChecklist({ page, previewMatches, relatedPages });
+const buildStaticContentHtml = ({ page, previewMatches }) => {
+  const paragraphs = buildPageParagraphs({ page, previewMatches });
+  const checklist = buildPageChecklist({ page, previewMatches });
   const sectionTitle = `${page.heading} guide`;
 
   return `<section class="seo-content" aria-label="About this page">
@@ -1170,7 +1176,6 @@ const main = async () => {
         staticContentHtml: buildStaticContentHtml({
           page,
           previewMatches: limitedPreviewMatches,
-          relatedPages,
         }),
         matchPreviewHtml: renderStaticMatchesHtml(limitedPreviewMatches, {
           groupByDate: page.previewWindowDays > 1,
