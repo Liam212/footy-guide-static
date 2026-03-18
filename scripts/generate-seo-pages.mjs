@@ -72,6 +72,7 @@ const MATCH_DURATION_BY_SPORT_ID = {
   4: 240,
   5: 240,
 };
+const SITEMAP_LASTMOD = new Date().toISOString();
 
 const exists = async filePath => {
   try {
@@ -248,10 +249,14 @@ const injectStaticPageSections = async ({ filePath, replacements = {}, footerLin
   }
 };
 
-const buildSitemap = urls => {
-  const body = urls
-    .sort((a, b) => a.localeCompare(b, "en"))
-    .map(loc => `  <url>\n    <loc>${loc}</loc>\n  </url>`)
+const buildSitemap = entries => {
+  const body = entries
+    .slice()
+    .sort((a, b) => a.loc.localeCompare(b.loc, "en"))
+    .map(
+      entry =>
+        `  <url>\n    <loc>${entry.loc}</loc>\n    <lastmod>${entry.lastmod}</lastmod>\n  </url>`
+    )
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
 };
@@ -955,12 +960,14 @@ const main = async () => {
       .map(item => [Number(item.id), item])
   );
 
-  const sitemapUrls = new Set([
-    `${SITE_URL}/`,
-    `${SITE_URL}/about/`,
-    `${SITE_URL}/faq/`,
-    `${SITE_URL}/privacy/`,
-  ]);
+  const sitemapUrls = new Map(
+    [
+      `${SITE_URL}/`,
+      `${SITE_URL}/about/`,
+      `${SITE_URL}/faq/`,
+      `${SITE_URL}/privacy/`,
+    ].map(url => [url, { loc: url, lastmod: SITEMAP_LASTMOD }])
+  );
 
   const pageDefs = [];
   const seoPages = [];
@@ -975,7 +982,10 @@ const main = async () => {
       group: page.group,
       pageType: page.pageType,
     });
-    sitemapUrls.add(`${SITE_URL}${page.canonicalPath}`);
+    sitemapUrls.set(`${SITE_URL}${page.canonicalPath}`, {
+      loc: `${SITE_URL}${page.canonicalPath}`,
+      lastmod: SITEMAP_LASTMOD,
+    });
   };
 
   sports.forEach(sport => {
@@ -1191,7 +1201,10 @@ const main = async () => {
     )
   );
 
-  await writeUtf8(path.join(OUT_DIR, "sitemap.xml"), buildSitemap(Array.from(sitemapUrls)));
+  await writeUtf8(
+    path.join(OUT_DIR, "sitemap.xml"),
+    buildSitemap(Array.from(sitemapUrls.values()))
+  );
   await writeUtf8(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`);
 };
 
