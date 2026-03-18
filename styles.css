@@ -901,6 +901,98 @@ button.ghost {
   line-height: 1.55;
 }
 
+.seo-top-nav {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.seo-nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(56, 163, 165, 0.08);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.seo-nav-link:hover {
+  background: rgba(56, 163, 165, 0.14);
+  border-color: rgba(56, 163, 165, 0.3);
+  color: var(--accent);
+}
+
+.seo-home-hub,
+.seo-content {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.seo-section-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.seo-copy-card h2 {
+  margin: 0;
+  font-size: 1.04rem;
+}
+
+.seo-copy-card p + p {
+  margin-top: 12px;
+}
+
+.seo-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.seo-list li + li {
+  margin-top: 8px;
+}
+
+.seo-link-grid {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.seo-grid-link {
+  display: block;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(56, 163, 165, 0.05);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.seo-grid-link:hover {
+  background: rgba(56, 163, 165, 0.1);
+  border-color: rgba(56, 163, 165, 0.32);
+  color: var(--accent);
+}
+
+.seo-preview-intro {
+  margin-top: 10px;
+}
+
+.seo-empty-copy {
+  margin: 12px 0 0;
+  color: var(--muted);
+}
+
 @media (max-width: 900px) {
   .date-banner {
     align-items: center;
@@ -935,6 +1027,10 @@ button.ghost {
   .channels {
     grid-column: 1 / -1;
     justify-self: start;
+  }
+
+  .seo-section-grid {
+    grid-template-columns: 1fr;
   }
 }
 
