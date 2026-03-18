@@ -651,22 +651,6 @@ const buildStaticContentHtml = ({ page, previewMatches, relatedPages }) => {
       </section>`;
 };
 
-const buildPreviewHeadingHtml = page => {
-  const rangeLabel =
-    page.previewWindowDays > 1
-      ? `Featured listings from the next ${page.previewWindowDays} days`
-      : "Featured listings for today";
-
-  return `<section class="page-card seo-copy-card seo-preview-intro" aria-label="Featured listings">
-        <h2>${escapeHtml(rangeLabel)}</h2>
-        <p>
-          These fixtures are written into the page HTML during the local SEO generation step. The
-          live app refreshes them after load, but crawlers can already see teams, competitions,
-          start times, and channel labels in the initial response.
-        </p>
-      </section>`;
-};
-
 const buildStructuredDataHtml = page => {
   const canonicalUrl = `${SITE_URL}${page.canonicalPath}`;
   const graph = {
@@ -782,7 +766,6 @@ const pageShell = ({
   page,
   primaryNavHtml,
   staticContentHtml,
-  previewHeadingHtml,
   matchPreviewHtml,
   footerLinksHtml,
 }) => {
@@ -891,8 +874,6 @@ const pageShell = ({
       <section class="status" aria-live="polite">
         <p id="status"></p>
       </section>
-
-      ${previewHeadingHtml}
 
       <section class="date-banner" aria-label="Selected date">
         <div class="date-banner-main">
@@ -1192,7 +1173,6 @@ const main = async () => {
           previewMatches: limitedPreviewMatches,
           relatedPages,
         }),
-        previewHeadingHtml: buildPreviewHeadingHtml(page),
         matchPreviewHtml: renderStaticMatchesHtml(limitedPreviewMatches, {
           groupByDate: page.previewWindowDays > 1,
         }),
