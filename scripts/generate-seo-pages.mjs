@@ -420,8 +420,21 @@ const buildHomeHubHtml = ({ featuredPages, competitionPages, sportPages, footbal
 };
 
 const decoratePageDef = def => {
+  const landingConfig = {
+    ...(def.landingConfig || {}),
+  };
+
+  if (
+    !Number.isFinite(Number(landingConfig.dateWindowDays)) &&
+    def.pageType !== "today-all" &&
+    def.pageType !== "today-football"
+  ) {
+    landingConfig.dateWindowDays = 7;
+  }
+
   const base = {
     ...def,
+    landingConfig,
     previewWindowDays: def.previewWindowDays || 7,
   };
 
