@@ -1,5 +1,6 @@
 import {
   todayIso,
+  parseDate,
   formatBannerDate,
   getShiftedDate,
   getStartOfWeek,
@@ -43,6 +44,8 @@ const hasFixedDateWindow = landingDateWindowDays > 1;
 const DAY_VIEW = "day";
 const WEEK_VIEW = "week";
 const WEEK_VIEW_DAYS = 7;
+const DATE_STRIP_VISIBLE_DAYS = 8;
+const DATE_STRIP_SHIFT_DAYS = 7;
 const DEFAULT_WEEK_VIEW_SPORT_IDS = new Set([2, 3, 4, 5]);
 const apiClient = createApiClient({
   apiUrl,
@@ -102,6 +105,8 @@ const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
 const todayDayButton = document.getElementById("today-day");
 const nextDayButton = document.getElementById("next-day");
+const dateStripEl = document.getElementById("date-strip");
+const dateWeekSummaryEl = document.getElementById("date-week-summary");
 const dateViewToggle = document.getElementById("date-view-toggle");
 const dayViewButton = document.getElementById("view-day");
 const weekViewButton = document.getElementById("view-week");
@@ -239,6 +244,7 @@ const writeStoredIds = (key, values) => {
 let currentDate = todayIso();
 let currentView = hasFixedDateWindow ? DAY_VIEW : (readViewFromUrl() || DAY_VIEW);
 let arePastMatchesVisible = false;
+let dateStripStartDate = todayIso();
 const MAX_MATCH_CACHE_ENTRIES = 24;
 const matchResponseCache = new Map();
 const inFlightMatchRequests = new Map();
@@ -334,20 +340,115 @@ const updateDateViewAvailability = ({ preferDefaultView = false } = {}) => {
   return { sportIds, viewChanged };
 };
 
-const getDateShiftAmount = () => (currentView === WEEK_VIEW && !hasFixedDateWindow ? WEEK_VIEW_DAYS : 1);
+const diffInDays = (from, to) => Math.round(
+  (parseDate(to).getTime() - parseDate(from).getTime()) / (24 * 60 * 60 * 1000)
+);
+
+const getWeekShiftAmount = () => (currentView === WEEK_VIEW && !hasFixedDateWindow ? WEEK_VIEW_DAYS : DATE_STRIP_SHIFT_DAYS);
+
+const getDefaultDateStripStart = selectedDate => {
+  const today = todayIso();
+  const dayDiff = diffInDays(today, selectedDate || today);
+  const windowOffset = Math.floor(dayDiff / DATE_STRIP_SHIFT_DAYS) * DATE_STRIP_SHIFT_DAYS;
+  return getShiftedDate(today, windowOffset);
+};
+
+const syncDateStripWindow = date => {
+  const targetDate = date || currentDate || todayIso();
+  if (!dateStripStartDate) {
+    dateStripStartDate = getDefaultDateStripStart(targetDate);
+    return;
+  }
+
+  const stripEnd = getShiftedDate(dateStripStartDate, DATE_STRIP_VISIBLE_DAYS - 1);
+  if (targetDate < dateStripStartDate || targetDate > stripEnd) {
+    dateStripStartDate = getDefaultDateStripStart(targetDate);
+  }
+};
+
+const formatDateStripTop = value => {
+  if (value === todayIso()) return "Today";
+  return parseDate(value).toLocaleDateString(undefined, {
+    weekday: "short",
+  });
+};
+
+const formatDateStripBottom = value =>
+  parseDate(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
+
+const formatWeekSummary = value => {
+  const start = getRangeStartDate(value || currentDate || todayIso());
+  const end = getShiftedDate(start, WEEK_VIEW_DAYS - 1);
+  const startDate = parseDate(start);
+  const endDate = parseDate(end);
+  const startText = startDate.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
+  const endText = endDate.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
+  return `${startText} - ${endText}`;
+};
+
+const renderDateStrip = () => {
+  if (!dateStripEl) return;
+  syncDateStripWindow(currentDate);
+  dateStripEl.innerHTML = "";
+
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < DATE_STRIP_VISIBLE_DAYS; index += 1) {
+    const dateValue = getShiftedDate(dateStripStartDate, index);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "date-chip";
+    button.setAttribute("data-date", dateValue);
+    button.setAttribute("aria-pressed", String(dateValue === currentDate));
+    button.setAttribute("aria-label", formatBannerDate(dateValue));
+
+    if (dateValue === currentDate) {
+      button.classList.add("is-active");
+    }
+
+    const top = document.createElement("span");
+    top.className = "date-chip__top";
+    top.textContent = formatDateStripTop(dateValue);
+
+    const bottom = document.createElement("span");
+    bottom.className = "date-chip__bottom";
+    bottom.textContent = formatDateStripBottom(dateValue);
+
+    button.append(top, bottom);
+    fragment.appendChild(button);
+  }
+
+  dateStripEl.appendChild(fragment);
+};
+
+const syncDateRailVisibility = () => {
+  if (!dateStripEl) return;
+  const isWeekView = currentView === WEEK_VIEW && !hasFixedDateWindow;
+  dateStripEl.hidden = isWeekView;
+  if (dateWeekSummaryEl) {
+    dateWeekSummaryEl.hidden = !isWeekView;
+    dateWeekSummaryEl.textContent = isWeekView ? formatWeekSummary(currentDate) : "";
+  }
+  const rail = dateStripEl.closest(".date-banner-main");
+  if (rail) {
+    rail.classList.toggle("is-week-view", isWeekView);
+  }
+};
 
 const updateDateNavigationLabels = () => {
   if (prevDayButton) {
-    prevDayButton.setAttribute(
-      "aria-label",
-      currentView === WEEK_VIEW && !hasFixedDateWindow ? "Previous week" : "Previous day"
-    );
+    prevDayButton.setAttribute("aria-label", "Previous week");
   }
   if (nextDayButton) {
-    nextDayButton.setAttribute(
-      "aria-label",
-      currentView === WEEK_VIEW && !hasFixedDateWindow ? "Next week" : "Next day"
-    );
+    nextDayButton.setAttribute("aria-label", "Next week");
   }
 };
 
@@ -424,9 +525,10 @@ const prefetchDateMatches = date => {
 
 const updateTodayButtonVisibility = () => {
   if (!todayDayButton) return;
-  const shouldHide = hasFixedDateWindow || (currentDate || todayIso()) === todayIso();
-  todayDayButton.classList.toggle("is-reserved-hidden", shouldHide);
-  todayDayButton.setAttribute("aria-hidden", String(shouldHide));
+  const shouldDisable = hasFixedDateWindow || (currentDate || todayIso()) === todayIso();
+  todayDayButton.classList.toggle("is-reserved-hidden", false);
+  todayDayButton.disabled = shouldDisable;
+  todayDayButton.setAttribute("aria-disabled", String(shouldDisable));
 };
 
 const getSportInputs = () =>
@@ -836,6 +938,24 @@ const formatGroupedDate = value => {
   });
 };
 
+const formatGroupedDateParts = value => {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return {
+      dayName: value,
+      shortDate: "",
+    };
+  }
+
+  return {
+    dayName: date.toLocaleDateString(undefined, { weekday: "long" }),
+    shortDate: date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    }),
+  };
+};
+
 const formatAnnouncementDate = value => {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value || "";
@@ -919,17 +1039,19 @@ const updateDateBanner = date => {
     dateBannerEl.textContent = rangeStartDate === getStartOfWeek(todayIso())
       ? "This week"
       : `Week of ${formatBannerDate(rangeStartDate)}`;
-    return;
+  } else {
+    dateBannerEl.textContent = windowDays > 1
+      ? `Next ${windowDays} days`
+      : `${formatBannerDate(date)}`;
   }
-  dateBannerEl.textContent = windowDays > 1
-    ? `Next ${windowDays} days`
-    : `${formatBannerDate(date)}`;
+  renderDateStrip();
+  syncDateRailVisibility();
 };
 
-const registerDatePrefetch = (button, direction) => {
+const registerDatePrefetch = (button, dayOffset) => {
   if (!button) return;
   const prefetch = () => {
-    prefetchDateMatches(getShiftedDate(currentDate, direction * getDateShiftAmount()));
+    prefetchDateMatches(getShiftedDate(currentDate, dayOffset));
   };
   button.addEventListener("mouseenter", prefetch);
   button.addEventListener("focus", prefetch);
@@ -972,6 +1094,19 @@ const createMatchCard = match => {
     sportIndicator.appendChild(indicator);
   }
 
+  const slot = document.createElement("div");
+  slot.className = "match-card__slot";
+
+  const badge = document.createElement("span");
+  badge.className = "match-card__badge";
+  badge.textContent = MATCH_STATUS_LABELS[matchStatus] || "Upcoming";
+  if (matchStatus === "ongoing") {
+    badge.classList.add("is-live");
+    badge.innerHTML = '<span class="match-card__live-dot" aria-hidden="true"></span><span>Live</span>';
+  } else if (matchStatus === "finished") {
+    badge.classList.add("is-finished");
+  }
+
   const time = document.createElement("time");
   time.className = "match-time";
   const normalizedTime = match.time && match.time.trim().length > 0 ? match.time.trim() : "";
@@ -985,6 +1120,10 @@ const createMatchCard = match => {
   } else {
     time.textContent = normalizedTime || "";
   }
+
+  const dayLabel = document.createElement("div");
+  dayLabel.className = "match-card__day";
+  dayLabel.textContent = formatGroupedDate(matchDate);
 
   const title = document.createElement("h3");
   title.className = "match-title";
@@ -1004,6 +1143,25 @@ const createMatchCard = match => {
     : locationText || teamsText;
   meta.textContent = metaText;
 
+  const body = document.createElement("div");
+  body.className = "match-card__body";
+
+  const titleRow = document.createElement("div");
+  titleRow.className = "match-card__title-row";
+  titleRow.append(sportIndicator, title);
+
+  body.append(titleRow, meta);
+
+  if (locationText && locationText !== metaText) {
+    const location = document.createElement("p");
+    location.className = "match-card__location";
+    location.textContent = locationText;
+    body.appendChild(location);
+  }
+
+  const aside = document.createElement("div");
+  aside.className = "match-card__meta";
+
   const channels = document.createElement("div");
   channels.className = "channels";
   (match.channels || []).forEach(channel => {
@@ -1020,6 +1178,13 @@ const createMatchCard = match => {
     channels.appendChild(pill);
   });
 
+  if (!channels.childElementCount) {
+    const fallbackPill = document.createElement("span");
+    fallbackPill.className = "channel-pill is-empty";
+    fallbackPill.textContent = "Coverage TBC";
+    channels.appendChild(fallbackPill);
+  }
+
   card.setAttribute(
     "aria-label",
     buildMatchAnnouncement({
@@ -1031,7 +1196,14 @@ const createMatchCard = match => {
       metaText,
     })
   );
-  card.append(sportIndicator, time, title, meta, channels);
+
+  slot.append(badge, time);
+  if (isDateRangeMode()) {
+    slot.appendChild(dayLabel);
+  }
+
+  aside.appendChild(channels);
+  card.append(slot, body, aside);
   return card;
 };
 
@@ -1042,7 +1214,7 @@ const renderEmptyState = () => {
   empty.className = "empty-state";
   empty.innerHTML = `
     <h2>No events found</h2>
-    <p>Try broadening your filters, switching date, or jumping to another page.</p>
+    <p>Try widening the filters, shifting the date, or jumping to a different schedule page.</p>
     <div class="empty-actions">
       <button type="button" class="ghost" data-action="reset">Reset filters</button>
     </div>
@@ -1112,7 +1284,20 @@ const renderMatches = matches => {
 
         const heading = document.createElement("h2");
         heading.className = "match-day-heading";
-        heading.textContent = formatGroupedDate(matchDate);
+        const { dayName, shortDate } = formatGroupedDateParts(matchDate);
+
+        const dayNameEl = document.createElement("span");
+        dayNameEl.className = "match-day-heading__day";
+        dayNameEl.textContent = dayName;
+
+        heading.appendChild(dayNameEl);
+
+        if (shortDate) {
+          const shortDateEl = document.createElement("span");
+          shortDateEl.className = "match-day-heading__date";
+          shortDateEl.textContent = shortDate;
+          heading.appendChild(shortDateEl);
+        }
 
         currentGroup.appendChild(heading);
         fragment.appendChild(currentGroup);
@@ -1186,8 +1371,9 @@ const handleInit = async () => {
 };
 
 const shiftDay = direction => {
-  const next = getShiftedDate(currentDate, direction * getDateShiftAmount());
+  const next = getShiftedDate(currentDate, direction * getWeekShiftAmount());
   currentDate = next;
+  dateStripStartDate = getShiftedDate(dateStripStartDate || todayIso(), direction * DATE_STRIP_SHIFT_DAYS);
   writeDateToUrl(currentDate === todayIso() ? null : currentDate);
   updateSeoMeta();
   loadMatches().catch(error => setStatus(error.message));
@@ -1223,8 +1409,21 @@ sportPills.addEventListener("click", event => {
 if (prevDayButton && nextDayButton) {
   prevDayButton.addEventListener("click", () => shiftDay(-1));
   nextDayButton.addEventListener("click", () => shiftDay(1));
-  registerDatePrefetch(prevDayButton, -1);
-  registerDatePrefetch(nextDayButton, 1);
+  registerDatePrefetch(prevDayButton, -DATE_STRIP_SHIFT_DAYS);
+  registerDatePrefetch(nextDayButton, DATE_STRIP_SHIFT_DAYS);
+}
+
+if (dateStripEl) {
+  dateStripEl.addEventListener("click", event => {
+    const button = event.target.closest("[data-date]");
+    if (!button) return;
+    const nextDate = button.getAttribute("data-date");
+    if (!nextDate || nextDate === currentDate) return;
+    currentDate = nextDate;
+    writeDateToUrl(currentDate === todayIso() ? null : currentDate);
+    updateSeoMeta();
+    loadMatches().catch(error => setStatus(error.message));
+  });
 }
 
 if (dayViewButton && weekViewButton) {
@@ -1255,6 +1454,7 @@ if (dayViewButton && weekViewButton) {
 if (todayDayButton) {
   todayDayButton.addEventListener("click", () => {
     currentDate = todayIso();
+    dateStripStartDate = todayIso();
     writeDateToUrl(currentDate === todayIso() ? null : currentDate);
     updateSeoMeta();
     loadMatches().catch(error => setStatus(error.message));

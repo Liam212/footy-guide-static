@@ -34,6 +34,9 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
 
     <script type="application/ld+json">
@@ -60,26 +63,41 @@
       }
     </script>
   </head>
-  <body>
+  <body class="home-page">
     <a class="skip-link" href="#matches-start">Skip to matches</a>
     <div class="app">
       <header class="site-header">
-        <div class="site-header-row">
-          <div class="site-header-main">
-            <h1>Where Is Match</h1>
-            <p>
-              Find where to watch live sport on TV and streaming services. Filter by sport, country, competition, and broadcaster to see today’s live matches and upcoming fixtures instantly.
-            </p>
+        <div class="site-header-row site-header-row-home">
+          <div class="topbar">
+            <a class="brand-mark" href="/">Where Is Match</a>
+            <nav class="top-nav" aria-label="Primary">
+              <a href="/" aria-current="page">Schedule</a>
+              <a href="/about/">About</a>
+              <a href="/faq/">FAQ</a>
+              <a href="/privacy/">Privacy</a>
+            </nav>
+            <div class="site-header-actions">
+              <button
+                id="theme-toggle"
+                type="button"
+                class="theme-toggle icon-only"
+                aria-label="Toggle theme"
+                title="Toggle theme">
+                <span class="sr-only">Toggle theme</span>
+              </button>
+            </div>
           </div>
-          <div class="site-header-actions">
-            <button
-              id="theme-toggle"
-              type="button"
-              class="theme-toggle icon-only"
-              aria-label="Toggle theme"
-              title="Toggle theme">
-              <span class="sr-only">Toggle theme</span>
-            </button>
+
+          <div class="hero-grid">
+            <div class="site-header-main hero-copy">
+              <p class="hero-kicker">Live Sports Broadcast Guide</p>
+              <h1>Find the match. Find the channel.</h1>
+              <p>
+                Find where to watch live sport on TV and streaming services. 
+                Filter by sport, country, competition, and broadcaster to see today’s live matches and upcoming fixtures instantly.
+              </p>
+            </div>
+            
           </div>
         </div>
       </header>
@@ -150,47 +168,80 @@
           <p id="status" role="status" aria-atomic="true"></p>
         </section>
 
-        <section class="date-banner" aria-label="Selected date">
-          <div class="date-banner-main">
-            <button id="prev-day" type="button" class="date-nav" aria-label="Previous day">
-              &#x2039;
-            </button>
-            <p id="date-banner" class="date-label"></p>
-            <button id="next-day" type="button" class="date-nav" aria-label="Next day">
-              &#x203A;
-            </button>
-          </div>
-          <div class="date-banner-actions">
-            <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
-              <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
-                Day
-              </button>
-              <button id="view-week" type="button" class="view-toggle-button" aria-pressed="false">
-                Week
+        <section class="schedule-shell" aria-label="Schedule">
+          <section class="date-banner" aria-label="Selected date">
+            <div class="date-banner-header">
+              <p id="date-banner" class="date-label"></p>
+              <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
+                <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
+                  Day
+                </button>
+                <button id="view-week" type="button" class="view-toggle-button" aria-pressed="false">
+                  Week
+                </button>
+              </div>
+              <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
+                Show past events
               </button>
             </div>
-            <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden" aria-label="Go to today">
-              Today
-            </button>
-            <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
-              Show past events
-            </button>
-          </div>
-        </section>
+            <div class="date-banner-main">
+              <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden">
+                Today
+              </button>
+              <button id="prev-day" type="button" class="date-nav" aria-label="Previous week">
+                &#x2039;
+              </button>
+              <div id="date-strip" class="date-strip" role="group" aria-label="Select date"></div>
+              <button id="next-day" type="button" class="date-nav" aria-label="Next week">
+                &#x203A;
+              </button>
+            </div>
+          </section>
 
-        <div id="matches-start" class="sr-only" tabindex="-1">Match results</div>
-        <section id="matches" class="matches" aria-label="Match list">
-          <!-- HOME_MATCH_PREVIEW -->
+          <div id="matches-start" class="sr-only" tabindex="-1">Match results</div>
+          <section id="matches" class="matches" aria-label="Match list">
+            <!-- HOME_MATCH_PREVIEW -->
+          </section>
         </section>
         <!-- SEO_PRIMARY_NAV -->
         <!-- HOME_SEO_HUB -->
+
+        <section class="editorial-grid" aria-label="Highlights">
+          <article class="editorial-card">
+            <p class="editorial-label">Live Filters</p>
+            <h2>Zero in by broadcaster, competition, or market.</h2>
+            <p>
+              The homepage is still data-driven, but the presentation is now closer to an editorial fixture list
+              than a generic utility dashboard.
+            </p>
+          </article>
+          <article class="editorial-card">
+            <p class="editorial-label">Matchday Flow</p>
+            <h2>Use day and week modes to scan the slate faster.</h2>
+            <p>
+              The date rail stays sticky while you browse, and live fixtures get elevated above the rest of the list.
+            </p>
+          </article>
+          <article class="editorial-card">
+            <p class="editorial-label">Availability</p>
+            <h2>Channel tags stay visible without drowning the schedule.</h2>
+            <p>
+              Broadcasters remain on every event card, but the hierarchy now prioritises kickoff, fixture, and competition.
+            </p>
+          </article>
+        </section>
       </main>
 
       <footer class="site-footer" aria-label="Site links">
-        <div class="footer-more-links" aria-label="Browse pages">
-          <!-- SEO_PAGES -->
+        <div class="site-footer-grid">
+          <div>
+            <p class="footer-brand">Where Is Match</p>
+            <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
+          </div>
+          <div class="footer-more-links" aria-label="Browse pages">
+            <!-- SEO_PAGES -->
+          </div>
         </div>
-        <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
         <nav class="footer-links" aria-label="Site pages">
           <a href="/">Home</a>
           <a href="/about/">About</a>

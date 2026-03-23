@@ -15,8 +15,12 @@ const RAW_API_URL =
   process.env.VITE_API_URL ||
   process.env.VITE_API_PROXY_TARGET ||
   "";
+const RAW_API_KEY =
+  process.env.API_KEY ||
+  process.env.VITE_API_KEY
 
 const apiUrl = RAW_API_URL.trim().replace(/\/$/, "");
+const apiKey = RAW_API_KEY.trim();
 if (!apiUrl) {
   throw new Error(
     "Missing API_URL. Provide API_URL, VITE_API_URL, or VITE_API_PROXY_TARGET as an env var during generation."
@@ -195,10 +199,16 @@ const formatAnnouncementTime = (_date, time) => {
 const fetchJson = async (apiPath, params = {}) => {
   const query = buildParams(params);
   const url = query ? `${apiUrl}${apiPath}?${query}` : `${apiUrl}${apiPath}`;
+  const headers = {
+    Accept: "application/json",
+  };
+
+  if (apiKey) {
+    headers["x-api-key"] = apiKey;
+  }
+
   const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
+    headers,
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch ${url} (${res.status})`);
