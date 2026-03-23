@@ -103,6 +103,7 @@ const advancedFilters = document.getElementById("advanced-filters");
 const advancedCount = document.getElementById("advanced-count");
 
 const statusEl = document.getElementById("status");
+const dateBannerSectionEl = document.querySelector(".date-banner");
 const dateBannerEl = document.getElementById("date-banner");
 const prevDayButton = document.getElementById("prev-day");
 const todayDayButton = document.getElementById("today-day");
@@ -130,6 +131,13 @@ const setStatus = message => {
 const setMatchesBusy = isBusy => {
   if (!matchesEl) return;
   matchesEl.setAttribute("aria-busy", String(Boolean(isBusy)));
+};
+
+const syncStickyDateBannerState = () => {
+  if (!dateBannerSectionEl) return;
+  const stickyTop = mobileDateLayoutQuery.matches ? 8 : 12;
+  const isStuck = dateBannerSectionEl.getBoundingClientRect().top <= stickyTop;
+  dateBannerSectionEl.classList.toggle("is-stuck", isStuck);
 };
 
 const STORAGE_KEYS = {
@@ -1486,6 +1494,11 @@ if (togglePastMatchesButton) {
 mobileDateLayoutQuery.addEventListener("change", () => {
   dateStripStartDate = getDefaultDateStripStart(currentDate);
   updateDateBanner(currentDate);
+  syncStickyDateBannerState();
 });
 
+window.addEventListener("scroll", syncStickyDateBannerState, { passive: true });
+window.addEventListener("resize", syncStickyDateBannerState, { passive: true });
+
 handleInit();
+syncStickyDateBannerState();
