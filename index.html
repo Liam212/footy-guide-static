@@ -165,21 +165,21 @@
         </section>
 
         <section class="schedule-shell" aria-label="Schedule">
-          <section class="date-banner" aria-label="Selected date">
-            <div class="date-banner-header">
-              <p id="date-banner" class="date-label"></p>
-              <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
-                <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
-                  Day
-                </button>
-                <button id="view-week" type="button" class="view-toggle-button" aria-pressed="false">
-                  Week
-                </button>
-              </div>
-              <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
-                Show past events
+          <div class="date-banner-info" aria-label="Selected date controls">
+            <p id="date-banner" class="date-label"></p>
+            <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
+              <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
+                Day
+              </button>
+              <button id="view-week" type="button" class="view-toggle-button" aria-pressed="false">
+                Week
               </button>
             </div>
+            <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
+              Show past events
+            </button>
+          </div>
+          <section class="date-banner" aria-label="Selected date navigation">
             <div class="date-banner-main">
               <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden">
                 Today
