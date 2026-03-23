@@ -1299,6 +1299,43 @@ input[type="search"]::placeholder {
   }
 }
 
+@media (max-width: 900px) and (min-width: 621px) {
+  .date-banner-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .date-label {
+    min-width: 0;
+  }
+
+  .date-banner-main {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .date-strip,
+  .date-week-summary {
+    flex: 1 1 auto;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .date-chip {
+    min-width: 76px;
+    padding: 10px 10px;
+  }
+
+  .date-nav-today {
+    padding: 0 12px;
+  }
+
+  .schedule-meta {
+    justify-content: flex-start;
+  }
+}
+
 @media (max-width: 620px) {
   .site-header h1,
   .hero-copy h1 {

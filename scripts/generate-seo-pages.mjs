@@ -10,20 +10,12 @@ const POSTHOG_HOST_PLACEHOLDER = "${POSTHOG_HOST}";
 const OUT_DIR = process.env.OUT_DIR || process.cwd();
 const MANIFEST_PATH = path.join(OUT_DIR, ".seo-manifest.json");
 const BACKUP_DIR = path.join(OUT_DIR, ".seo-backups");
-const RAW_API_URL =
-  process.env.API_URL ||
-  process.env.VITE_API_URL ||
-  process.env.VITE_API_PROXY_TARGET ||
-  "";
-const RAW_API_KEY =
-  process.env.API_KEY ||
-  process.env.VITE_API_KEY
 
-const apiUrl = RAW_API_URL.trim().replace(/\/$/, "");
-const apiKey = RAW_API_KEY.trim();
+const apiUrl = process.env.VITE_API_PROXY_TARGET
+
 if (!apiUrl) {
   throw new Error(
-    "Missing API_URL. Provide API_URL, VITE_API_URL, or VITE_API_PROXY_TARGET as an env var during generation."
+    "Missing VITE_API_PROXY_TARGET as an env var during generation."
   );
 }
 
@@ -202,10 +194,6 @@ const fetchJson = async (apiPath, params = {}) => {
   const headers = {
     Accept: "application/json",
   };
-
-  if (apiKey) {
-    headers["x-api-key"] = apiKey;
-  }
 
   const res = await fetch(url, {
     headers,
