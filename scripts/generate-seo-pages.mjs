@@ -430,6 +430,15 @@ const decoratePageDef = def => {
     landingConfig.dateWindowDays = 7;
   }
 
+  if (
+    landingConfig.dateWindowDays === 7 &&
+    !landingConfig.defaultView &&
+    def.pageType !== "today-all" &&
+    def.pageType !== "today-football"
+  ) {
+    landingConfig.defaultView = "week";
+  }
+
   const base = {
     ...def,
     landingConfig,

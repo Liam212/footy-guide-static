@@ -40,6 +40,10 @@ const isLandingLocked = Boolean(landingConfig?.lockFilters);
 const landingDateWindowDays = Number.isFinite(Number(landingConfig?.dateWindowDays))
   ? Math.max(1, Math.floor(Number(landingConfig.dateWindowDays)))
   : 1;
+const isFixedWeekView = (
+  landingConfig?.defaultView === "week" &&
+  landingDateWindowDays === 7
+);
 const hasFixedDateWindow = landingDateWindowDays > 1;
 const DAY_VIEW = "day";
 const WEEK_VIEW = "week";
@@ -252,7 +256,7 @@ const writeStoredIds = (key, values) => {
 };
 
 let currentDate = todayIso();
-let currentView = hasFixedDateWindow ? DAY_VIEW : (readViewFromUrl() || DAY_VIEW);
+let currentView = isFixedWeekView ? WEEK_VIEW : (hasFixedDateWindow ? DAY_VIEW : (readViewFromUrl() || DAY_VIEW));
 let arePastMatchesVisible = false;
 let dateStripStartDate = todayIso();
 const MAX_MATCH_CACHE_ENTRIES = 24;
@@ -303,7 +307,7 @@ const getCurrentDateWindowDays = () => {
 const isDateRangeMode = () => getCurrentDateWindowDays() > 1;
 
 const getRangeStartDate = date => {
-  if (currentView === WEEK_VIEW && !hasFixedDateWindow) {
+  if (currentView === WEEK_VIEW) {
     return getStartOfWeek(date || todayIso());
   }
   return date || todayIso();
@@ -314,7 +318,7 @@ const getRangeEndDate = date =>
 
 const normalizeCurrentDateForView = () => false;
 
-const canUseWeekView = () => !hasFixedDateWindow;
+const canUseWeekView = () => !hasFixedDateWindow && !isFixedWeekView;
 
 const shouldDefaultToWeekViewForSportIds = sportIds =>
   canUseWeekView() &&
@@ -338,7 +342,7 @@ const updateDateViewAvailability = ({ preferDefaultView = false } = {}) => {
   }
   const sportIds = normalizeFilterIds(getCheckedSportIds());
   let viewChanged = false;
-  if (!canUseWeekView() && currentView === WEEK_VIEW) {
+  if (!canUseWeekView() && currentView === WEEK_VIEW && !isFixedWeekView) {
     currentView = DAY_VIEW;
     writeViewToUrl(null);
     viewChanged = true;
@@ -355,7 +359,7 @@ const diffInDays = (from, to) => Math.round(
   (parseDate(to).getTime() - parseDate(from).getTime()) / (24 * 60 * 60 * 1000)
 );
 
-const getWeekShiftAmount = () => (currentView === WEEK_VIEW && !hasFixedDateWindow ? WEEK_VIEW_DAYS : DATE_STRIP_SHIFT_DAYS);
+const getWeekShiftAmount = () => (currentView === WEEK_VIEW ? WEEK_VIEW_DAYS : DATE_STRIP_SHIFT_DAYS);
 
 const isMobileDateLayout = () => mobileDateLayoutQuery.matches;
 
@@ -455,7 +459,7 @@ const renderDateStrip = () => {
 
 const syncDateRailVisibility = () => {
   if (!dateStripEl) return;
-  const isWeekView = currentView === WEEK_VIEW && !hasFixedDateWindow;
+  const isWeekView = currentView === WEEK_VIEW;
   dateStripEl.hidden = isWeekView;
   if (dateWeekSummaryEl) {
     dateWeekSummaryEl.hidden = !isWeekView;
@@ -549,7 +553,9 @@ const prefetchDateMatches = date => {
 
 const updateTodayButtonVisibility = () => {
   if (!todayDayButton) return;
-  const shouldDisable = hasFixedDateWindow || (currentDate || todayIso()) === todayIso();
+  const shouldDisable = isFixedWeekView
+    ? getStartOfWeek(currentDate || todayIso()) === getStartOfWeek(todayIso())
+    : hasFixedDateWindow || (currentDate || todayIso()) === todayIso();
   todayDayButton.classList.toggle("is-reserved-hidden", false);
   todayDayButton.disabled = shouldDisable;
   todayDayButton.setAttribute("aria-disabled", String(shouldDisable));
@@ -1058,7 +1064,7 @@ const formatTeams = match => {
 const updateDateBanner = date => {
   if (!dateBannerEl) return;
   const windowDays = getCurrentDateWindowDays();
-  if (currentView === WEEK_VIEW && !hasFixedDateWindow) {
+  if (currentView === WEEK_VIEW) {
     const rangeStartDate = getRangeStartDate(date);
     dateBannerEl.textContent = rangeStartDate === getStartOfWeek(todayIso())
       ? "This week"
