@@ -279,19 +279,25 @@ const updateVisibleEventsStatus = () => {
 };
 
 const updatePastMatchesVisibility = () => {
-  const hidePastMatches = !arePastMatchesVisible;
   const finishedCards = Array.from(
     matchesEl.querySelectorAll(".match-card.is-finished")
   );
   const pastMatchCount = finishedCards.length;
+  const activeMatchCount = matchesEl.querySelectorAll(".match-card:not(.is-finished)").length;
+  const mustShowPastMatches = pastMatchCount > 0 && activeMatchCount === 0;
+  const effectivePastMatchesVisible = arePastMatchesVisible || mustShowPastMatches;
+  const hidePastMatches = !effectivePastMatchesVisible;
+
   finishedCards.forEach(card => card.classList.toggle("is-collapsed", hidePastMatches));
 
   if (togglePastMatchesButton) {
-    togglePastMatchesButton.textContent = arePastMatchesVisible
-      ? `Hide past events (${pastMatchCount})`
+    togglePastMatchesButton.textContent = effectivePastMatchesVisible
+      ? arePastMatchesVisible
+        ? `Hide past events (${pastMatchCount})`
+        : `Past events only (${pastMatchCount})`
       : `Show past events (${pastMatchCount})`;
     togglePastMatchesButton.setAttribute("aria-pressed", String(arePastMatchesVisible));
-    togglePastMatchesButton.disabled = pastMatchCount === 0;
+    togglePastMatchesButton.disabled = pastMatchCount === 0 || mustShowPastMatches;
   }
 
   updateVisibleEventsStatus();
