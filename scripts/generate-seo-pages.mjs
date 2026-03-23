@@ -885,29 +885,43 @@ const pageShell = ({
     <a class="skip-link" href="#matches-start">Skip to matches</a>
     <div class="app">
       <header class="site-header">
-        <div class="site-header-row">
-          <div class="site-header-main">
-            <p class="site-kicker"><a href="/">Where Is Match</a></p>
-            <h1>${escapeHtml(page.heading)}</h1>
-            <p>${escapeHtml(page.intro)}</p>
+        <div class="site-header-row site-header-row-home">
+          <div class="topbar">
+            <a class="brand-mark" href="/">Where Is Match</a>
+            <nav class="top-nav" aria-label="Primary">
+              <a href="/">Schedule</a>
+              <a href="/about/">About</a>
+              <a href="/faq/">FAQ</a>
+              <a href="/privacy/">Privacy</a>
+            </nav>
+            <div class="site-header-actions">
+              <button
+                id="theme-toggle"
+                type="button"
+                class="theme-toggle icon-only"
+                aria-label="Toggle theme"
+                title="Toggle theme">
+                <span class="sr-only">Toggle theme</span>
+              </button>
+            </div>
           </div>
-          <div class="site-header-actions">
-            <button
-              id="theme-toggle"
-              type="button"
-              class="theme-toggle icon-only"
-              aria-label="Toggle theme"
-              title="Toggle theme">
-              <span class="sr-only">Toggle theme</span>
-            </button>
+
+          <div class="hero-grid">
+            <div class="site-header-main hero-copy">
+              <p class="hero-kicker">${escapeHtml(page.shortTitle || page.heading)}</p>
+              <h1>${escapeHtml(page.heading)}</h1>
+              <p>${escapeHtml(page.intro)}</p>
+            </div>
           </div>
         </div>
       </header>
 
       <main id="main-content" class="home-main">
         <section class="controls" aria-label="Filters">
-          <div class="control full-row control-sports">
-            <label>Sports</label>
+          <div class="control control-sports">
+            <div class="control-header">
+              <span class="control-label">Sports</span>
+            </div>
             <div id="sport-pills" class="pill-group" role="group" aria-label="Sports"></div>
           </div>
           <div class="control control-country">
@@ -969,17 +983,9 @@ const pageShell = ({
           <p id="status" role="status" aria-atomic="true"></p>
         </section>
 
-        <section class="date-banner" aria-label="Selected date">
-          <div class="date-banner-main">
-            <button id="prev-day" type="button" class="date-nav" aria-label="Previous day">
-              &#x2039;
-            </button>
+        <section class="schedule-shell" aria-label="Schedule">
+          <div class="date-banner-info" aria-label="Selected date controls">
             <p id="date-banner" class="date-label"></p>
-            <button id="next-day" type="button" class="date-nav" aria-label="Next day">
-              &#x203A;
-            </button>
-          </div>
-          <div class="date-banner-actions">
             <div id="date-view-toggle" class="view-toggle" role="group" aria-label="Time range" hidden>
               <button id="view-day" type="button" class="view-toggle-button is-active" aria-pressed="true">
                 Day
@@ -988,18 +994,31 @@ const pageShell = ({
                 Week
               </button>
             </div>
-            <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden" aria-label="Go to today">
-              Today
-            </button>
             <button id="toggle-past-matches" type="button" class="ghost subtle-toggle" aria-pressed="false">
               Show past events
             </button>
           </div>
-        </section>
+          <section class="date-banner" aria-label="Selected date navigation">
+            <div class="date-banner-main">
+              <button id="today-day" type="button" class="ghost date-nav-today is-reserved-hidden">
+                Today
+              </button>
+              <button id="prev-day" type="button" class="date-nav" aria-label="Previous week">
+                <span class="date-nav__icon" aria-hidden="true">&#x2039;</span>
+                <span class="date-nav__label">Prev Week</span>
+              </button>
+              <div id="date-strip" class="date-strip" role="group" aria-label="Select date"></div>
+              <button id="next-day" type="button" class="date-nav" aria-label="Next week">
+                <span class="date-nav__label">Next Week</span>
+                <span class="date-nav__icon" aria-hidden="true">&#x203A;</span>
+              </button>
+            </div>
+          </section>
 
-        <div id="matches-start" class="sr-only" tabindex="-1">Match results</div>
-        <section id="matches" class="matches" aria-label="Match list">
-          ${matchPreviewHtml}
+          <div id="matches-start" class="sr-only" tabindex="-1">Match results</div>
+          <section id="matches" class="matches" aria-label="Match list">
+            ${matchPreviewHtml}
+          </section>
         </section>
 
         ${primaryNavHtml}
@@ -1007,10 +1026,19 @@ const pageShell = ({
       </main>
 
       <footer class="site-footer" aria-label="Site links">
-        <div class="footer-more-links" aria-label="Browse pages">
-          ${footerLinksHtml}
+        <div class="site-footer-grid">
+          <div>
+            <p class="footer-brand">Where Is Match</p>
+            <p class="footer-meta">
+              Find where to watch live sport on TV and streaming services. Filter by sport, country,
+              competition, and broadcaster to see today’s live matches and upcoming fixtures instantly.
+            </p>
+            <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
+          </div>
+          <div class="footer-more-links" aria-label="Browse pages">
+            ${footerLinksHtml}
+          </div>
         </div>
-        <p class="footer-meta">Data is provided by third parties and may be delayed or incomplete.</p>
         <nav class="footer-links" aria-label="Site pages">
           <a href="/">Home</a>
           <a href="/about/">About</a>
