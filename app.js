@@ -322,6 +322,7 @@ const shouldDefaultToWeekViewForSportIds = sportIds =>
   DEFAULT_WEEK_VIEW_SPORT_IDS.has(sportIds[0]);
 
 const syncDateViewControls = () => {
+  document.documentElement.setAttribute("data-schedule-view", currentView);
   if (!dateViewToggle || !dayViewButton || !weekViewButton) return;
   dateViewToggle.hidden = !canUseWeekView();
   dayViewButton.classList.toggle("is-active", currentView === DAY_VIEW);

@@ -582,8 +582,8 @@ input[type="search"]::placeholder {
 
 .schedule-shell {
   margin-top: 14px;
-  padding: 18px;
-  border-radius: 28px;
+  padding: 12px 14px;
+  border-radius: 16px;
 }
 
 .date-banner-info {
@@ -853,60 +853,83 @@ input[type="search"]::placeholder {
 
 .matches {
   display: grid;
-  gap: 12px;
+  gap: 2px;
 }
 
 .match-day-group {
   display: grid;
-  gap: 12px;
+  gap: 2px;
 }
 
 .match-day-group + .match-day-group {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .match-day-heading {
   margin: 0;
-  padding: 4px 2px;
+  padding: 6px 0 4px;
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .match-day-heading__day {
-  font-size: 1.5rem;
+  font-size: 1.15rem;
   line-height: 0.95;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.03em;
   color: var(--ink);
 }
 
 .match-day-heading__date {
-  font-size: 0.8rem;
-  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+}
+
+:root[data-schedule-view="week"] .match-day-heading {
+  padding-top: 8px;
+  font-size: 0.82rem;
+  letter-spacing: 0.18em;
+}
+
+:root[data-schedule-view="week"] .match-day-heading__day {
+  font-size: 1.4rem;
+}
+
+:root[data-schedule-view="week"] .match-day-heading__date {
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
 }
 
 .match-card {
   position: relative;
   display: grid;
   grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) minmax(190px, 0.8fr);
-  gap: 18px;
+  gap: 12px;
   align-items: center;
-  padding: 18px 20px;
-  border-left: 4px solid transparent;
-  border-radius: 22px;
-  background: var(--card);
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.matches > .match-card:nth-of-type(odd),
+.match-day-group .match-card:nth-of-type(odd) {
+  background: color-mix(in srgb, var(--panel) 42%, transparent);
+}
+
+.matches > .match-card:nth-of-type(even),
+.match-day-group .match-card:nth-of-type(even) {
+  background: color-mix(in srgb, var(--panel-strong) 58%, transparent);
 }
 
 .match-card:hover {
-  transform: translateY(-1px);
-  border-left-color: var(--border-strong);
-  background: var(--panel-strong);
+  border-bottom-color: var(--border-strong);
+  background: color-mix(in srgb, var(--panel-strong) 52%, transparent);
 }
 
 .match-card:focus-visible {
@@ -923,7 +946,7 @@ input[type="search"]::placeholder {
 }
 
 .match-card.is-ongoing {
-  border-left-color: var(--accent-2);
+  border-bottom-color: var(--accent-2);
 }
 
 .match-card__slot,
@@ -934,23 +957,22 @@ input[type="search"]::placeholder {
 
 .match-card__slot {
   display: grid;
-  gap: 10px;
+  gap: 4px;
 }
 
 .match-card__badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: fit-content;
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
+  min-height: 20px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--muted-strong);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -986,37 +1008,37 @@ input[type="search"]::placeholder {
 .match-time {
   margin: 0;
   color: var(--ink);
-  font-size: 1.3rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
 }
 
 .match-card__day {
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .match-card__body {
   display: grid;
-  gap: 10px;
+  gap: 4px;
 }
 
 .match-card__title-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
 .match-sport {
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--panel-strong);
+  width: 22px;
+  height: 22px;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1024,8 +1046,8 @@ input[type="search"]::placeholder {
 }
 
 .sport-indicator {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   object-fit: contain;
   filter: var(--sport-indicator-filter);
 }
@@ -1033,10 +1055,10 @@ input[type="search"]::placeholder {
 .match-title {
   margin: 0;
   min-width: 0;
-  font-size: clamp(1.05rem, 2vw, 1.32rem);
+  font-size: clamp(0.96rem, 1.4vw, 1.1rem);
   font-weight: 800;
   line-height: 1.1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .match-meta,
@@ -1046,37 +1068,38 @@ input[type="search"]::placeholder {
 }
 
 .match-meta {
-  font-size: 0.88rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   font-weight: 700;
 }
 
 .match-card__location {
-  font-size: 0.92rem;
+  font-size: 0.8rem;
 }
 
 .match-card__meta {
   display: grid;
   justify-items: end;
-  gap: 10px;
+  gap: 6px;
 }
 
 .channels {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
 
 .channel-pill {
-  min-height: 32px;
-  padding: 0 12px;
-  background: var(--card-2);
+  min-height: 24px;
+  padding: 0 8px;
+  background: transparent;
+  border: 1px solid var(--border);
   color: var(--muted-strong);
-  font-size: 0.76rem;
+  font-size: 0.66rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
