@@ -626,6 +626,23 @@ input[type="search"]::placeholder {
   margin: 0;
 }
 
+.date-banner-main #prev-day {
+  order: 1;
+}
+
+.date-banner-main #today-day {
+  order: 2;
+}
+
+.date-banner-main #next-day {
+  order: 3;
+}
+
+.date-banner-main .date-strip,
+.date-banner-main .date-week-summary {
+  order: 4;
+}
+
 .date-banner-main.is-week-view {
   justify-content: center;
 }
@@ -1342,6 +1359,13 @@ input[type="search"]::placeholder {
     font-size: clamp(2.8rem, 15vw, 4.2rem);
   }
 
+  .date-banner {
+    position: static;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+
   .date-banner-header,
   .date-banner-main,
   .date-banner-actions {
@@ -1349,8 +1373,11 @@ input[type="search"]::placeholder {
   }
 
   .date-banner-header {
-    align-items: flex-start;
-    flex-direction: column;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .date-banner-actions {
@@ -1358,28 +1385,41 @@ input[type="search"]::placeholder {
     justify-content: space-between;
   }
 
+  .date-label {
+    display: none;
+  }
+
+  .view-toggle {
+    margin-left: auto;
+  }
+
+  .subtle-toggle {
+    display: inline-flex;
+  }
+
   .schedule-meta {
     justify-content: flex-start;
   }
 
   .date-banner-main {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-start;
-    align-items: stretch;
+    align-items: center;
     width: 100%;
+    gap: 8px;
   }
 
   .date-nav-today {
-    width: 100%;
+    display: none;
   }
 
   .date-strip,
   .date-week-summary {
-    order: 2;
+    order: 0;
   }
 
   .date-banner-main .date-nav {
-    order: 1;
+    display: none;
   }
 
   .date-week-summary {
@@ -1388,12 +1428,61 @@ input[type="search"]::placeholder {
     flex: 1 1 auto;
   }
 
+  .date-banner-main.is-week-view {
+    display: block;
+    padding-top: 48px;
+  }
+
+  .date-banner-main.is-week-view .date-strip {
+    display: none;
+  }
+
+  .date-banner-main.is-week-view .date-nav {
+    display: inline-flex;
+    width: calc(50vw - 16px);
+    min-width: 0;
+    height: 40px;
+    justify-content: center;
+    padding: 0 12px;
+    font-size: 0.82rem;
+    position: fixed;
+    top: 8px;
+    z-index: 9;
+  }
+
+  .date-banner-main.is-week-view #prev-day {
+    left: 10px;
+  }
+
+  .date-banner-main.is-week-view #next-day {
+    right: 10px;
+  }
+
   .date-banner-main.is-week-view .date-nav__label {
+    display: inline;
+  }
+
+  .date-banner-main.is-week-view .date-nav__icon {
+    display: none;
+  }
+
+  .date-banner-main.is-week-view .date-week-summary {
     display: none;
   }
 
   .date-chip {
-    min-width: 80px;
+    min-width: 72px;
+    min-height: 50px;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .date-chip__top {
+    font-size: 0.58rem;
+  }
+
+  .date-chip__bottom {
+    font-size: 0.82rem;
   }
 
   .advanced-panel,

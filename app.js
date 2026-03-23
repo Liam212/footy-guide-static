@@ -45,8 +45,10 @@ const DAY_VIEW = "day";
 const WEEK_VIEW = "week";
 const WEEK_VIEW_DAYS = 7;
 const DATE_STRIP_VISIBLE_DAYS = 8;
+const MOBILE_DATE_STRIP_VISIBLE_DAYS = 28;
 const DATE_STRIP_SHIFT_DAYS = 7;
 const DEFAULT_WEEK_VIEW_SPORT_IDS = new Set([2, 3, 4, 5]);
+const mobileDateLayoutQuery = window.matchMedia("(max-width: 620px)");
 const apiClient = createApiClient({
   apiUrl,
 });
@@ -346,7 +348,20 @@ const diffInDays = (from, to) => Math.round(
 
 const getWeekShiftAmount = () => (currentView === WEEK_VIEW && !hasFixedDateWindow ? WEEK_VIEW_DAYS : DATE_STRIP_SHIFT_DAYS);
 
+const isMobileDateLayout = () => mobileDateLayoutQuery.matches;
+
+const getVisibleDateStripDays = () => (isMobileDateLayout() ? MOBILE_DATE_STRIP_VISIBLE_DAYS : DATE_STRIP_VISIBLE_DAYS);
+
 const getDefaultDateStripStart = selectedDate => {
+  if (isMobileDateLayout()) {
+    const currentWeekStart = getStartOfWeek(todayIso());
+    const targetWeekStart = getStartOfWeek(selectedDate || todayIso());
+    const mobileWindowEnd = getShiftedDate(currentWeekStart, MOBILE_DATE_STRIP_VISIBLE_DAYS - 1);
+    return targetWeekStart > mobileWindowEnd
+      ? targetWeekStart
+      : currentWeekStart;
+  }
+
   const today = todayIso();
   const dayDiff = diffInDays(today, selectedDate || today);
   const windowOffset = Math.floor(dayDiff / DATE_STRIP_SHIFT_DAYS) * DATE_STRIP_SHIFT_DAYS;
@@ -360,7 +375,7 @@ const syncDateStripWindow = date => {
     return;
   }
 
-  const stripEnd = getShiftedDate(dateStripStartDate, DATE_STRIP_VISIBLE_DAYS - 1);
+  const stripEnd = getShiftedDate(dateStripStartDate, getVisibleDateStripDays() - 1);
   if (targetDate < dateStripStartDate || targetDate > stripEnd) {
     dateStripStartDate = getDefaultDateStripStart(targetDate);
   }
@@ -401,7 +416,7 @@ const renderDateStrip = () => {
   dateStripEl.innerHTML = "";
 
   const fragment = document.createDocumentFragment();
-  for (let index = 0; index < DATE_STRIP_VISIBLE_DAYS; index += 1) {
+  for (let index = 0; index < getVisibleDateStripDays(); index += 1) {
     const dateValue = getShiftedDate(dateStripStartDate, index);
     const button = document.createElement("button");
     button.type = "button";
@@ -1467,5 +1482,10 @@ if (togglePastMatchesButton) {
     updatePastMatchesVisibility();
   });
 }
+
+mobileDateLayoutQuery.addEventListener("change", () => {
+  dateStripStartDate = getDefaultDateStripStart(currentDate);
+  updateDateBanner(currentDate);
+});
 
 handleInit();
